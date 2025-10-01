@@ -1,0 +1,57 @@
+package com.dh.ctd.mp.proyecto_final.service.impl;
+
+import com.dh.ctd.mp.proyecto_final.dto.CaracteristicaDTO;
+import com.dh.ctd.mp.proyecto_final.entity.Caracteristica;
+import com.dh.ctd.mp.proyecto_final.mapper.CaracteristicaMapper;
+import com.dh.ctd.mp.proyecto_final.repository.CaracteristicaRepository;
+import com.dh.ctd.mp.proyecto_final.service.ICaracteristicaService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class CaracteristicaServiceImpl implements ICaracteristicaService {
+
+    @Autowired
+    private CaracteristicaRepository caracteristicaRepository;
+
+    @Override
+    public CaracteristicaDTO save(CaracteristicaDTO dto) {
+        Caracteristica entity = CaracteristicaMapper.toEntity(dto);
+        Caracteristica saved = caracteristicaRepository.save(entity);
+        return CaracteristicaMapper.toDTO(saved);
+    }
+
+    @Override
+    public Optional<CaracteristicaDTO> findById(Long id) {
+        return caracteristicaRepository.findById(id)
+                .map(CaracteristicaMapper::toDTO);
+    }
+
+    @Override
+    public List<CaracteristicaDTO> findAll() {
+        return caracteristicaRepository.findAll().stream()
+                .map(CaracteristicaMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void delete(Long id) {
+        caracteristicaRepository.deleteById(id);
+    }
+
+    @Override
+    public Optional<CaracteristicaDTO> update(CaracteristicaDTO dto) {
+        return caracteristicaRepository.findById(dto.getId())
+                .map(entity -> {
+                    entity.setNombre(dto.getNombre());
+                    entity.setDescripcion(dto.getDescripcion());
+                    entity.setIconoUrl(dto.getIconoUrl());
+                    Caracteristica actualizada = caracteristicaRepository.save(entity);
+                    return CaracteristicaMapper.toDTO(actualizada);
+                });
+    }
+}
