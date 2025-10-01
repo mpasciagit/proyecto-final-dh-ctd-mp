@@ -4,16 +4,17 @@ import com.dh.ctd.mp.proyecto_final.dto.ProductoDTO;
 import com.dh.ctd.mp.proyecto_final.entity.Caracteristica;
 import com.dh.ctd.mp.proyecto_final.entity.Producto;
 import com.dh.ctd.mp.proyecto_final.entity.ProductoCaracteristica;
+import com.dh.ctd.mp.proyecto_final.exception.InvalidDataException;
+import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.mapper.ProductoMapper;
 import com.dh.ctd.mp.proyecto_final.repository.CaracteristicaRepository;
 import com.dh.ctd.mp.proyecto_final.repository.ProductoRepository;
 import com.dh.ctd.mp.proyecto_final.service.IProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.Set;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,13 +33,17 @@ public class ProductoServiceImpl implements IProductoService {
     // 1️⃣ Guardar producto
     @Override
     public ProductoDTO save(ProductoDTO productoDTO) {
+        if (productoDTO.getNombre() == null || productoDTO.getPrecio() == null) {
+            throw new InvalidDataException("El nombre y el precio son obligatorios.");
+        }
+
         Producto producto = ProductoMapper.toEntity(productoDTO);
 
-        // Resolver las características existentes en la BD
+        // Resolver características
         Set<ProductoCaracteristica> relaciones = producto.getProductoCaracteristicas().stream()
                 .map(pc -> {
                     Caracteristica caracteristica = caracteristicaRepository.findById(pc.getCaracteristica().getId())
-                            .orElseThrow(() -> new RuntimeException(
+                            .orElseThrow(() -> new ResourceNotFoundException(
                                     "Característica no encontrada: " + pc.getCaracteristica().getId()
                             ));
                     pc.setCaracteristica(caracteristica);
@@ -55,9 +60,10 @@ public class ProductoServiceImpl implements IProductoService {
 
     // 2️⃣ Buscar por ID
     @Override
-    public Optional<ProductoDTO> findById(Long id) {
+    public ProductoDTO findById(Long id) {
         return productoRepository.findById(id)
-                .map(ProductoMapper::toDTO);
+                .map(ProductoMapper::toDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + id));
     }
 
     // 3️⃣ Listar todos
@@ -71,20 +77,26 @@ public class ProductoServiceImpl implements IProductoService {
 
     // 4️⃣ Actualizar
     @Override
-    public ProductoDTO update(Long id, ProductoDTO productoDTO) throws Exception {
-        if (productoRepository.existsById(id)) {
-            Producto producto = ProductoMapper.toEntity(productoDTO);
-            producto.setId(id); // aseguramos mantener el ID
-            Producto actualizado = productoRepository.save(producto);
-            return ProductoMapper.toDTO(actualizado);
-        } else {
-            throw new Exception("Producto no encontrado con id: " + id);
+    public ProductoDTO update(Long id, ProductoDTO productoDTO) {
+        Producto existente = productoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + id));
+
+        if (productoDTO.getNombre() == null || productoDTO.getPrecio() == null) {
+            throw new InvalidDataException("El nombre y el precio son obligatorios.");
         }
+
+        Producto producto = ProductoMapper.toEntity(productoDTO);
+        producto.setId(id); // mantener el ID
+        Producto actualizado = productoRepository.save(producto);
+        return ProductoMapper.toDTO(actualizado);
     }
 
     // 5️⃣ Eliminar
     @Override
     public void delete(Long id) {
+        if (!productoRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Producto no encontrado con id: " + id);
+        }
         productoRepository.deleteById(id);
     }
 
@@ -124,12 +136,11 @@ public class ProductoServiceImpl implements IProductoService {
                 .collect(Collectors.toList());
     }
 
-    // 🔟 Lógica adicional: verificar disponibilidad
+    // 🔟 Verificar disponibilidad
     @Override
     public boolean verificarDisponibilidad(Long productoId, int cantidadSolicitada) {
-        Optional<Producto> productoOpt = productoRepository.findById(productoId);
-        return productoOpt.map(producto -> producto.getCantidadTotal() >= cantidadSolicitada)
-                .orElse(false);
+        Producto producto = productoRepository.findById(productoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + productoId));
+        return producto.getCantidadTotal() >= cantidadSolicitada;
     }
 }
-

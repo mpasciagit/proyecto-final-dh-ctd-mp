@@ -2,14 +2,15 @@ package com.dh.ctd.mp.proyecto_final.service.impl;
 
 import com.dh.ctd.mp.proyecto_final.dto.RolDTO;
 import com.dh.ctd.mp.proyecto_final.entity.Rol;
+import com.dh.ctd.mp.proyecto_final.exception.DuplicateResourceException;
+import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
+import com.dh.ctd.mp.proyecto_final.mapper.RolMapper;
 import com.dh.ctd.mp.proyecto_final.repository.RolRepository;
 import com.dh.ctd.mp.proyecto_final.service.IRolService;
-import com.dh.ctd.mp.proyecto_final.mapper.RolMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +22,11 @@ public class RolServiceImpl implements IRolService {
     // 1️⃣ Guardar rol
     @Override
     public RolDTO save(RolDTO rolDTO) {
+        // Verificar duplicado por nombre
+        rolRepository.findByNombre(rolDTO.getNombre()).ifPresent(r ->
+                { throw new DuplicateResourceException("Rol con nombre '" + rolDTO.getNombre() + "' ya existe"); }
+        );
+
         Rol rol = RolMapper.toEntity(rolDTO);
         Rol saved = rolRepository.save(rol);
         return RolMapper.toDTO(saved);
@@ -28,9 +34,10 @@ public class RolServiceImpl implements IRolService {
 
     // 2️⃣ Buscar por ID
     @Override
-    public Optional<RolDTO> findById(Long id) {
+    public RolDTO findById(Long id) {
         return rolRepository.findById(id)
-                .map(RolMapper::toDTO);
+                .map(RolMapper::toDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado con id: " + id));
     }
 
     // 3️⃣ Listar todos
@@ -44,13 +51,17 @@ public class RolServiceImpl implements IRolService {
 
     // 4️⃣ Actualizar rol
     @Override
-    public RolDTO update(Long id, RolDTO rolDTO) throws Exception {
-        Optional<Rol> existente = rolRepository.findById(id);
-        if (existente.isEmpty()) {
-            throw new Exception("Rol no encontrado con id: " + id);
-        }
+    public RolDTO update(Long id, RolDTO rolDTO) {
+        Rol existente = rolRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado con id: " + id));
+
+        // Verificar duplicado en nombre (excluyendo el propio)
+        rolRepository.findByNombre(rolDTO.getNombre())
+                .filter(r -> !r.getId().equals(id))
+                .ifPresent(r -> { throw new DuplicateResourceException("Rol con nombre '" + rolDTO.getNombre() + "' ya existe"); });
+
         Rol rol = RolMapper.toEntity(rolDTO);
-        rol.setId(id); // aseguramos mantener el ID
+        rol.setId(id);
         Rol actualizado = rolRepository.save(rol);
         return RolMapper.toDTO(actualizado);
     }
@@ -58,15 +69,17 @@ public class RolServiceImpl implements IRolService {
     // 5️⃣ Eliminar rol
     @Override
     public void delete(Long id) {
+        if (!rolRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Rol no encontrado con id: " + id);
+        }
         rolRepository.deleteById(id);
     }
 
     // 6️⃣ Buscar por nombre
     @Override
-    public Optional<RolDTO> findByNombre(String nombre) {
+    public RolDTO findByNombre(String nombre) {
         return rolRepository.findByNombre(nombre)
-                .map(RolMapper::toDTO);
+                .map(RolMapper::toDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado con nombre: " + nombre));
     }
 }
-
-

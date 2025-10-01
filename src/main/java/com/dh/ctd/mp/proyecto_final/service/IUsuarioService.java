@@ -3,19 +3,18 @@ package com.dh.ctd.mp.proyecto_final.service;
 import com.dh.ctd.mp.proyecto_final.dto.UsuarioDTO;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface IUsuarioService {
 
     // CRUD genérico
     UsuarioDTO save(UsuarioDTO usuarioDTO);
-    Optional<UsuarioDTO> findById(Long id);
+    UsuarioDTO findById(Long id);   // lanza ResourceNotFoundException si no existe
     List<UsuarioDTO> findAll();
     UsuarioDTO update(UsuarioDTO usuarioDTO) throws Exception;
-    void delete(Long id);
+    void delete(Long id);            // lanza ResourceNotFoundException si no existe
 
     // Búsquedas específicas
-    Optional<UsuarioDTO> findByEmail(String email);
+    UsuarioDTO findByEmail(String email);        // lanza ResourceNotFoundException si no existe
     List<UsuarioDTO> findByRol(String nombreRol);
     List<UsuarioDTO> findByNombre(String nombre);
 }

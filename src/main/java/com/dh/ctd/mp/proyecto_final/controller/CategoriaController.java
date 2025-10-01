@@ -20,15 +20,13 @@ public class CategoriaController {
     }
 
     @PostMapping
-    public ResponseEntity<CategoriaDTO> crear(@RequestBody CategoriaDTO categoriaDTO) {
-        return ResponseEntity.ok(categoriaService.save(categoriaDTO));
+    public ResponseEntity<CategoriaDTO> crear(@RequestBody CategoriaDTO dto) {
+        return ResponseEntity.ok(categoriaService.save(dto));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CategoriaDTO> buscarPorId(@PathVariable Long id) {
-        return categoriaService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(categoriaService.findById(id));
     }
 
     @GetMapping
@@ -37,13 +35,9 @@ public class CategoriaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CategoriaDTO> actualizar(@PathVariable Long id, @RequestBody CategoriaDTO categoriaDTO) {
-        try {
-            categoriaDTO.setId(id);
-            return ResponseEntity.ok(categoriaService.update(categoriaDTO));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<CategoriaDTO> actualizar(@PathVariable Long id, @RequestBody CategoriaDTO dto) {
+        dto.setId(id);
+        return ResponseEntity.ok(categoriaService.update(dto));
     }
 
     @DeleteMapping("/{id}")

@@ -2,12 +2,16 @@ package com.dh.ctd.mp.proyecto_final.service;
 
 import com.dh.ctd.mp.proyecto_final.dto.CaracteristicaDTO;
 import java.util.List;
-import java.util.Optional;
 
 public interface ICaracteristicaService {
+
     CaracteristicaDTO save(CaracteristicaDTO dto);
-    Optional<CaracteristicaDTO> findById(Long id);
+
+    CaracteristicaDTO findById(Long id); // ahora lanza ResourceNotFoundException si no existe
+
     List<CaracteristicaDTO> findAll();
-    void delete(Long id);
-    Optional<CaracteristicaDTO> update(CaracteristicaDTO dto);
+
+    CaracteristicaDTO update(CaracteristicaDTO dto); // lanza ResourceNotFoundException o InvalidDataException
+
+    void delete(Long id); // lanza ResourceNotFoundException si no existe
 }

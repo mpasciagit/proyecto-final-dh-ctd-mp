@@ -2,6 +2,8 @@ package com.dh.ctd.mp.proyecto_final.service.impl;
 
 import com.dh.ctd.mp.proyecto_final.dto.CaracteristicaDTO;
 import com.dh.ctd.mp.proyecto_final.entity.Caracteristica;
+import com.dh.ctd.mp.proyecto_final.exception.InvalidDataException;
+import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.mapper.CaracteristicaMapper;
 import com.dh.ctd.mp.proyecto_final.repository.CaracteristicaRepository;
 import com.dh.ctd.mp.proyecto_final.service.ICaracteristicaService;
@@ -20,15 +22,19 @@ public class CaracteristicaServiceImpl implements ICaracteristicaService {
 
     @Override
     public CaracteristicaDTO save(CaracteristicaDTO dto) {
+        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+            throw new InvalidDataException("El nombre de la característica es obligatorio.");
+        }
         Caracteristica entity = CaracteristicaMapper.toEntity(dto);
         Caracteristica saved = caracteristicaRepository.save(entity);
         return CaracteristicaMapper.toDTO(saved);
     }
 
     @Override
-    public Optional<CaracteristicaDTO> findById(Long id) {
+    public CaracteristicaDTO findById(Long id) {
         return caracteristicaRepository.findById(id)
-                .map(CaracteristicaMapper::toDTO);
+                .map(CaracteristicaMapper::toDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Característica con id " + id + " no encontrada"));
     }
 
     @Override
@@ -40,18 +46,25 @@ public class CaracteristicaServiceImpl implements ICaracteristicaService {
 
     @Override
     public void delete(Long id) {
+        if (!caracteristicaRepository.existsById(id)) {
+            throw new ResourceNotFoundException("No se puede eliminar. Característica con id " + id + " no encontrada");
+        }
         caracteristicaRepository.deleteById(id);
     }
 
     @Override
-    public Optional<CaracteristicaDTO> update(CaracteristicaDTO dto) {
-        return caracteristicaRepository.findById(dto.getId())
-                .map(entity -> {
-                    entity.setNombre(dto.getNombre());
-                    entity.setDescripcion(dto.getDescripcion());
-                    entity.setIconoUrl(dto.getIconoUrl());
-                    Caracteristica actualizada = caracteristicaRepository.save(entity);
-                    return CaracteristicaMapper.toDTO(actualizada);
-                });
+    public CaracteristicaDTO update(CaracteristicaDTO dto) {
+        Caracteristica entity = caracteristicaRepository.findById(dto.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Característica con id " + dto.getId() + " no encontrada"));
+
+        if (dto.getNombre() == null || dto.getNombre().isBlank()) {
+            throw new InvalidDataException("El nombre de la característica es obligatorio.");
+        }
+
+        entity.setNombre(dto.getNombre());
+        entity.setDescripcion(dto.getDescripcion());
+        entity.setIconoUrl(dto.getIconoUrl());
+        Caracteristica actualizada = caracteristicaRepository.save(entity);
+        return CaracteristicaMapper.toDTO(actualizada);
     }
 }

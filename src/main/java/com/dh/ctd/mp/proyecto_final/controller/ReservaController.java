@@ -2,6 +2,7 @@ package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.ReservaDTO;
 import com.dh.ctd.mp.proyecto_final.entity.EstadoReserva;
+import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.IReservaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/reservas")
@@ -33,9 +33,9 @@ public class ReservaController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ReservaDTO> obtenerReservaPorId(@PathVariable Long id) {
-        Optional<ReservaDTO> reserva = reservaService.findById(id);
-        return reserva.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        // Si no existe, el service lanza ResourceNotFoundException
+        ReservaDTO reserva = reservaService.findById(id);
+        return ResponseEntity.ok(reserva);
     }
 
     @GetMapping
@@ -45,13 +45,9 @@ public class ReservaController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ReservaDTO> actualizarReserva(@PathVariable Long id, @RequestBody ReservaDTO reservaDTO) {
-        try {
-            reservaDTO.setId(id);
-            ReservaDTO actualizada = reservaService.update(reservaDTO);
-            return ResponseEntity.ok(actualizada);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        reservaDTO.setId(id);
+        ReservaDTO actualizada = reservaService.update(reservaDTO);
+        return ResponseEntity.ok(actualizada);
     }
 
     @DeleteMapping("/{id}")

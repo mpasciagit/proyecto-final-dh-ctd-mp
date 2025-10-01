@@ -7,26 +7,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/favoritos")
 public class FavoritoController {
 
+    private final IFavoritoService favoritoService;
+
     @Autowired
-    private IFavoritoService favoritoService;
+    public FavoritoController(IFavoritoService favoritoService) {
+        this.favoritoService = favoritoService;
+    }
 
     @PostMapping
     public ResponseEntity<FavoritoDTO> crearFavorito(@RequestBody FavoritoDTO favoritoDTO) {
-        FavoritoDTO creado = favoritoService.save(favoritoDTO);
-        return ResponseEntity.ok(creado);
+        return ResponseEntity.ok(favoritoService.save(favoritoDTO));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<FavoritoDTO> obtenerPorId(@PathVariable Long id) {
-        Optional<FavoritoDTO> favorito = favoritoService.findById(id);
-        return favorito.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(favoritoService.findById(id));
     }
 
     @GetMapping

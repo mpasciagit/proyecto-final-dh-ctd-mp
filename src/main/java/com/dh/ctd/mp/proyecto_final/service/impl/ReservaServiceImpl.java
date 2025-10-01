@@ -5,6 +5,9 @@ import com.dh.ctd.mp.proyecto_final.entity.EstadoReserva;
 import com.dh.ctd.mp.proyecto_final.entity.Producto;
 import com.dh.ctd.mp.proyecto_final.entity.Reserva;
 import com.dh.ctd.mp.proyecto_final.entity.Usuario;
+import com.dh.ctd.mp.proyecto_final.exception.BusinessRuleException;
+import com.dh.ctd.mp.proyecto_final.exception.InvalidDataException;
+import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.mapper.ReservaMapper;
 import com.dh.ctd.mp.proyecto_final.repository.ProductoRepository;
 import com.dh.ctd.mp.proyecto_final.repository.ReservaRepository;
@@ -15,33 +18,45 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class ReservaServiceImpl implements IReservaService {
 
     private final ReservaRepository reservaRepository;
+    private final ProductoRepository productoRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Autowired
-    public ReservaServiceImpl(ReservaRepository reservaRepository) {
+    public ReservaServiceImpl(ReservaRepository reservaRepository,
+                              ProductoRepository productoRepository,
+                              UsuarioRepository usuarioRepository) {
         this.reservaRepository = reservaRepository;
+        this.productoRepository = productoRepository;
+        this.usuarioRepository = usuarioRepository;
     }
-
-    @Autowired
-    private ProductoRepository productoRepository;
-    @Autowired
-    private UsuarioRepository usuarioRepository;
 
     @Override
     public ReservaDTO save(ReservaDTO reservaDTO) {
         if (reservaDTO.getProductoId() == null || reservaDTO.getUsuarioId() == null) {
-            throw new IllegalArgumentException("Producto y Usuario son obligatorios");
+            throw new InvalidDataException("Producto y Usuario son obligatorios");
         }
+        if (reservaDTO.getFechaInicio() == null || reservaDTO.getFechaFin() == null
+                || reservaDTO.getFechaFin().isBefore(reservaDTO.getFechaInicio())) {
+            throw new InvalidDataException("Fechas inválidas: fin debe ser >= inicio");
+        }
+
         Producto producto = productoRepository.findById(reservaDTO.getProductoId())
-                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
         Usuario usuario = usuarioRepository.findById(reservaDTO.getUsuarioId())
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        // Validación de regla de negocio: producto ya reservado en esas fechas
+        boolean reservado = reservaRepository.existsByProductoIdAndFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
+                producto.getId(), reservaDTO.getFechaFin(), reservaDTO.getFechaInicio());
+        if (reservado) {
+            throw new BusinessRuleException("Producto ya reservado en las fechas indicadas");
+        }
 
         Reserva reserva = ReservaMapper.toEntity(reservaDTO);
         reserva.setProducto(producto);
@@ -51,8 +66,10 @@ public class ReservaServiceImpl implements IReservaService {
     }
 
     @Override
-    public Optional<ReservaDTO> findById(Long id) {
-        return reservaRepository.findById(id).map(ReservaMapper::toDTO);
+    public ReservaDTO findById(Long id) {
+        return reservaRepository.findById(id)
+                .map(ReservaMapper::toDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + id));
     }
 
     @Override
@@ -63,20 +80,29 @@ public class ReservaServiceImpl implements IReservaService {
     }
 
     @Override
-    public ReservaDTO update(ReservaDTO reservaDTO) throws Exception {
-        if (reservaRepository.existsById(reservaDTO.getId())) {
-            Reserva reserva = ReservaMapper.toEntity(reservaDTO);
-            return ReservaMapper.toDTO(reservaRepository.save(reserva));
-        } else {
-            throw new Exception("No se pudo actualizar la reserva con id: " + reservaDTO.getId());
+    public ReservaDTO update(ReservaDTO reservaDTO) {
+        Reserva existente = reservaRepository.findById(reservaDTO.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + reservaDTO.getId()));
+
+        if (reservaDTO.getFechaInicio() == null || reservaDTO.getFechaFin() == null
+                || reservaDTO.getFechaFin().isBefore(reservaDTO.getFechaInicio())) {
+            throw new InvalidDataException("Fechas inválidas: fin debe ser >= inicio");
         }
+
+        Reserva reserva = ReservaMapper.toEntity(reservaDTO);
+        reserva.setId(existente.getId());
+        return ReservaMapper.toDTO(reservaRepository.save(reserva));
     }
 
     @Override
     public void delete(Long id) {
+        if (!reservaRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Reserva no encontrada con id: " + id);
+        }
         reservaRepository.deleteById(id);
     }
 
+    // --- Métodos específicos ---
     @Override
     public List<ReservaDTO> findByUsuario(Long usuarioId) {
         return reservaRepository.findByUsuarioId(usuarioId).stream()

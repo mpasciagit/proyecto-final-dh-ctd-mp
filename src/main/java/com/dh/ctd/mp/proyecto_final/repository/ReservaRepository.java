@@ -28,4 +28,8 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
     // Reservas de un producto con un estado dado
     List<Reserva> findByProductoIdAndEstado(Long productoId, EstadoReserva estado);
+
+    // 🔹 Verificación de regla de negocio: producto reservado en un rango de fechas
+    boolean existsByProductoIdAndFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
+            Long productoId, LocalDate fechaFin, LocalDate fechaInicio);
 }

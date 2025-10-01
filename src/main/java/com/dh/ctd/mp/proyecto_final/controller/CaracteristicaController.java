@@ -18,29 +18,23 @@ public class CaracteristicaController {
 
     @PostMapping
     public ResponseEntity<CaracteristicaDTO> crear(@RequestBody CaracteristicaDTO dto) {
-        CaracteristicaDTO guardada = caracteristicaService.save(dto);
-        return ResponseEntity.ok(guardada);
+        return ResponseEntity.ok(caracteristicaService.save(dto));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CaracteristicaDTO> buscarPorId(@PathVariable Long id) {
-        Optional<CaracteristicaDTO> dto = caracteristicaService.findById(id);
-        return dto.map(ResponseEntity::ok)
-                  .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(caracteristicaService.findById(id));
     }
 
     @GetMapping
     public ResponseEntity<List<CaracteristicaDTO>> listarTodas() {
-        List<CaracteristicaDTO> lista = caracteristicaService.findAll();
-        return ResponseEntity.ok(lista);
+        return ResponseEntity.ok(caracteristicaService.findAll());
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CaracteristicaDTO> actualizar(@PathVariable Long id, @RequestBody CaracteristicaDTO dto) {
         dto.setId(id);
-        Optional<CaracteristicaDTO> actualizada = caracteristicaService.update(dto);
-        return actualizada.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(caracteristicaService.update(dto));
     }
 
     @DeleteMapping("/{id}")

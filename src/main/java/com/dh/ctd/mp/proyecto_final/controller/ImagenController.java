@@ -1,13 +1,13 @@
 package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.ImagenDTO;
+import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.IImagenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/imagenes")
@@ -24,9 +24,12 @@ public class ImagenController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ImagenDTO> obtenerImagen(@PathVariable Long id) {
-        Optional<ImagenDTO> imagen = imagenService.findById(id);
-        return imagen.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        try {
+            ImagenDTO imagen = imagenService.findById(id);
+            return ResponseEntity.ok(imagen);
+        } catch (ResourceNotFoundException ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping
@@ -36,8 +39,12 @@ public class ImagenController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarImagen(@PathVariable Long id) {
-        imagenService.delete(id);
-        return ResponseEntity.noContent().build();
+        try {
+            imagenService.delete(id);
+            return ResponseEntity.noContent().build();
+        } catch (ResourceNotFoundException ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/producto/{productoId}")
