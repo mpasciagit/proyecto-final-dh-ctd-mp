@@ -10,7 +10,7 @@ public interface IUsuarioService {
     UsuarioDTO save(UsuarioDTO usuarioDTO);
     UsuarioDTO findById(Long id);   // lanza ResourceNotFoundException si no existe
     List<UsuarioDTO> findAll();
-    UsuarioDTO update(UsuarioDTO usuarioDTO) throws Exception;
+    UsuarioDTO update(UsuarioDTO usuarioDTO);  // ya no declara 'throws Exception'
     void delete(Long id);            // lanza ResourceNotFoundException si no existe
 
     // Búsquedas específicas

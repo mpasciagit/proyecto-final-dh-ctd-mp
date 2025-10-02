@@ -1,8 +1,6 @@
 package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.UsuarioDTO;
-import com.dh.ctd.mp.proyecto_final.exception.DuplicateResourceException;
-import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.IUsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,23 +22,15 @@ public class UsuarioController {
     // 1️⃣ Crear usuario
     @PostMapping
     public ResponseEntity<UsuarioDTO> crearUsuario(@RequestBody UsuarioDTO usuarioDTO) {
-        try {
-            UsuarioDTO nuevoUsuario = usuarioService.save(usuarioDTO);
-            return ResponseEntity.ok(nuevoUsuario);
-        } catch (DuplicateResourceException e) {
-            return ResponseEntity.status(409).body(null);
-        }
+        UsuarioDTO nuevoUsuario = usuarioService.save(usuarioDTO);
+        return ResponseEntity.ok(nuevoUsuario);
     }
 
     // 2️⃣ Buscar usuario por ID
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioDTO> obtenerUsuarioPorId(@PathVariable Long id) {
-        try {
-            UsuarioDTO usuario = usuarioService.findById(id);
-            return ResponseEntity.ok(usuario);
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        UsuarioDTO usuario = usuarioService.findById(id);
+        return ResponseEntity.ok(usuario);
     }
 
     // 3️⃣ Listar todos los usuarios
@@ -53,28 +43,16 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioDTO> actualizarUsuario(@PathVariable Long id,
                                                         @RequestBody UsuarioDTO usuarioDTO) {
-        try {
-            usuarioDTO.setId(id);
-            UsuarioDTO actualizado = usuarioService.update(usuarioDTO);
-            return ResponseEntity.ok(actualizado);
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (DuplicateResourceException e) {
-            return ResponseEntity.status(409).body(null);
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(null);
-        }
+        usuarioDTO.setId(id);
+        UsuarioDTO actualizado = usuarioService.update(usuarioDTO);
+        return ResponseEntity.ok(actualizado);
     }
 
     // 5️⃣ Eliminar usuario
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarUsuario(@PathVariable Long id) {
-        try {
-            usuarioService.delete(id);
-            return ResponseEntity.noContent().build();
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        usuarioService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
     // 6️⃣ Buscar usuarios por rol
@@ -92,11 +70,7 @@ public class UsuarioController {
     // 8️⃣ Buscar usuario por email
     @GetMapping("/email/{email}")
     public ResponseEntity<UsuarioDTO> obtenerPorEmail(@PathVariable String email) {
-        try {
-            UsuarioDTO usuario = usuarioService.findByEmail(email);
-            return ResponseEntity.ok(usuario);
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        UsuarioDTO usuario = usuarioService.findByEmail(email);
+        return ResponseEntity.ok(usuario);
     }
 }

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/caracteristicas")
+@RequestMapping("/api/caracteristicas")
 public class CaracteristicaController {
 
     @Autowired

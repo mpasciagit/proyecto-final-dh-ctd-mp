@@ -1,7 +1,6 @@
 package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.ImagenDTO;
-import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.IImagenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -10,26 +9,24 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/imagenes")
+@RequestMapping("/api/imagenes")
 public class ImagenController {
 
+    private final IImagenService imagenService;
+
     @Autowired
-    private IImagenService imagenService;
+    public ImagenController(IImagenService imagenService) {
+        this.imagenService = imagenService;
+    }
 
     @PostMapping
     public ResponseEntity<ImagenDTO> crearImagen(@RequestBody ImagenDTO imagenDTO) {
-        ImagenDTO guardada = imagenService.save(imagenDTO);
-        return ResponseEntity.ok(guardada);
+        return ResponseEntity.ok(imagenService.save(imagenDTO));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ImagenDTO> obtenerImagen(@PathVariable Long id) {
-        try {
-            ImagenDTO imagen = imagenService.findById(id);
-            return ResponseEntity.ok(imagen);
-        } catch (ResourceNotFoundException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(imagenService.findById(id));
     }
 
     @GetMapping
@@ -39,12 +36,8 @@ public class ImagenController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarImagen(@PathVariable Long id) {
-        try {
-            imagenService.delete(id);
-            return ResponseEntity.noContent().build();
-        } catch (ResourceNotFoundException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        imagenService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/producto/{productoId}")

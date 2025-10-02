@@ -1,7 +1,6 @@
 package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.ProductoDTO;
-import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.IProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,70 +19,65 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
+    // ----------------- CREAR -----------------
     @PostMapping
     public ResponseEntity<ProductoDTO> crearProducto(@RequestBody ProductoDTO productoDTO) {
         ProductoDTO nuevoProducto = productoService.save(productoDTO);
         return ResponseEntity.ok(nuevoProducto);
     }
 
+    // ----------------- OBTENER POR ID -----------------
     @GetMapping("/{id}")
     public ResponseEntity<ProductoDTO> obtenerProductoPorId(@PathVariable Long id) {
-        try {
-            ProductoDTO producto = productoService.findById(id);
-            return ResponseEntity.ok(producto);
-        } catch (ResourceNotFoundException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(productoService.findById(id));
     }
 
+    // ----------------- LISTAR TODOS -----------------
     @GetMapping
     public ResponseEntity<List<ProductoDTO>> listarTodos() {
         return ResponseEntity.ok(productoService.findAll());
     }
 
+    // ----------------- ACTUALIZAR -----------------
     @PutMapping("/{id}")
     public ResponseEntity<ProductoDTO> actualizarProducto(@PathVariable Long id,
                                                           @RequestBody ProductoDTO productoDTO) {
-        try {
-            ProductoDTO actualizado = productoService.update(id, productoDTO);
-            return ResponseEntity.ok(actualizado);
-        } catch (ResourceNotFoundException ex) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+        ProductoDTO actualizado = productoService.update(id, productoDTO);
+        return ResponseEntity.ok(actualizado);
     }
 
+    // ----------------- ELIMINAR -----------------
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
-        try {
-            productoService.delete(id);
-            return ResponseEntity.noContent().build();
-        } catch (ResourceNotFoundException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        productoService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
+    // ----------------- BUSCAR POR NOMBRE -----------------
     @GetMapping("/nombre/{nombre}")
     public ResponseEntity<List<ProductoDTO>> buscarPorNombre(@PathVariable String nombre) {
         return ResponseEntity.ok(productoService.findByNombre(nombre));
     }
 
+    // ----------------- BUSCAR POR CATEGORÍA -----------------
     @GetMapping("/categoria/{categoriaId}")
     public ResponseEntity<List<ProductoDTO>> buscarPorCategoria(@PathVariable Long categoriaId) {
         return ResponseEntity.ok(productoService.findByCategoria(categoriaId));
     }
 
+    // ----------------- LISTAR RESERVABLES -----------------
     @GetMapping("/reservables")
     public ResponseEntity<List<ProductoDTO>> listarReservables() {
         return ResponseEntity.ok(productoService.findReservables());
     }
 
+    // ----------------- LISTAR CON STOCK -----------------
     @GetMapping("/disponibles")
     public ResponseEntity<List<ProductoDTO>> listarConStockDisponible() {
         return ResponseEntity.ok(productoService.findConStockDisponible());
     }
 
+    // ----------------- VERIFICAR DISPONIBILIDAD -----------------
     @GetMapping("/{id}/disponibilidad/{cantidad}")
     public ResponseEntity<Boolean> verificarDisponibilidad(@PathVariable Long id,
                                                            @PathVariable int cantidad) {
