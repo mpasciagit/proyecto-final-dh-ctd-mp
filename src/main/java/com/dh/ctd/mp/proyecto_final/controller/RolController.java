@@ -4,6 +4,7 @@ import com.dh.ctd.mp.proyecto_final.dto.RolDTO;
 import com.dh.ctd.mp.proyecto_final.service.IRolService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,42 +20,48 @@ public class RolController {
         this.rolService = rolService;
     }
 
-    // 1️⃣ Crear rol
+    // 🔹 Crear rol (solo SUPER_ADMIN)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping
     public ResponseEntity<RolDTO> crearRol(@RequestBody RolDTO rolDTO) {
         RolDTO nuevoRol = rolService.save(rolDTO);
         return ResponseEntity.ok(nuevoRol);
     }
 
-    // 2️⃣ Buscar rol por ID
+    // 🔹 Buscar rol por ID (ADMIN o SUPER_ADMIN)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<RolDTO> obtenerRolPorId(@PathVariable Long id) {
         RolDTO rol = rolService.findById(id);
         return ResponseEntity.ok(rol);
     }
 
-    // 3️⃣ Listar todos los roles
+    // 🔹 Listar todos los roles (ADMIN o SUPER_ADMIN)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @GetMapping
     public ResponseEntity<List<RolDTO>> listarTodos() {
         List<RolDTO> roles = rolService.findAll();
         return ResponseEntity.ok(roles);
     }
 
-    // 4️⃣ Actualizar rol
+    // 🔹 Actualizar rol (solo SUPER_ADMIN)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<RolDTO> actualizarRol(@PathVariable Long id, @RequestBody RolDTO rolDTO) {
         RolDTO actualizado = rolService.update(id, rolDTO);
         return ResponseEntity.ok(actualizado);
     }
 
-    // 5️⃣ Eliminar rol
+    // 🔹 Eliminar rol (solo SUPER_ADMIN)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarRol(@PathVariable Long id) {
         rolService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    // 6️⃣ Buscar rol por nombre
+    // 🔹 Buscar rol por nombre (ADMIN o SUPER_ADMIN)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @GetMapping("/nombre/{nombre}")
     public ResponseEntity<RolDTO> obtenerPorNombre(@PathVariable String nombre) {
         RolDTO rol = rolService.findByNombre(nombre);

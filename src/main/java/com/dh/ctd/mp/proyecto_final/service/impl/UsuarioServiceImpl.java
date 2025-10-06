@@ -9,6 +9,7 @@ import com.dh.ctd.mp.proyecto_final.repository.RolRepository;
 import com.dh.ctd.mp.proyecto_final.repository.UsuarioRepository;
 import com.dh.ctd.mp.proyecto_final.service.IUsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,6 +26,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
     @Autowired
     private RolRepository rolRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // 1️⃣ Guardar usuario
     @Override
@@ -120,4 +124,14 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 .map(usuarioMapper::toDTO)
                 .collect(Collectors.toList());
     }
+
+    // 9️⃣ Resetear password (solo ADMIN/SUPER_ADMIN)
+    @Override
+    public void resetPassword(Long userId, String newPassword) {
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + userId));
+        usuario.setPassword(passwordEncoder.encode(newPassword));
+        usuarioRepository.save(usuario);
+    }
+
 }

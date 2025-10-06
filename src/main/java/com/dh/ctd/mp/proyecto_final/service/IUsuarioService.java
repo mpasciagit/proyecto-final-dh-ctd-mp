@@ -17,4 +17,7 @@ public interface IUsuarioService {
     UsuarioDTO findByEmail(String email);        // lanza ResourceNotFoundException si no existe
     List<UsuarioDTO> findByRol(String nombreRol);
     List<UsuarioDTO> findByNombre(String nombre);
+
+    // Resetear password de un usuario (solo ADMIN/SUPER_ADMIN)
+    void resetPassword(Long userId, String newPassword);
 }
