@@ -13,7 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableMethodSecurity   // 👈 habilita @PreAuthorize, @Secured, etc.
+@EnableMethodSecurity   // ✅ habilita anotaciones como @PreAuthorize
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -23,30 +23,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 🔴 Desactivar CSRF (para APIs REST + JWT no es necesario)
+                // 🔴 Desactivar CSRF (innecesario en APIs JWT)
                 .csrf(csrf -> csrf.disable())
 
                 // 🔐 Control de acceso a endpoints
                 .authorizeHttpRequests(auth -> auth
+                        // 🧩 Endpoints públicos: Swagger, H2 y Auth
                         .requestMatchers(
                                 "/h2-console/**",
-                                "/api/auth/**"   // login y register quedan públicos
+                                "/api/auth/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/swagger-ui.html"
                         ).permitAll()
-                        .anyRequest().authenticated() // el resto exige token válido
+                        // 🔒 El resto requiere autenticación con JWT
+                        .anyRequest().authenticated()
                 )
 
-                // ⚙️ Configurar la sesión: sin estado (JWT)
+                // ⚙️ Política de sesión: sin estado (JWT)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // 🔧 Configurar el AuthenticationProvider (DAO + BCrypt)
+                // 🔧 Proveedor de autenticación (DAO + BCrypt)
                 .authenticationProvider(authenticationProvider)
 
-                // 🛡️ Insertar el filtro JWT antes del filtro de autenticación por usuario/contraseña
+                // 🛡️ Insertar el filtro JWT antes del filtro por usuario/contraseña
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // ⚙️ Permitir frames para la consola H2
+        // ⚙️ Permitir frames (para consola H2)
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();

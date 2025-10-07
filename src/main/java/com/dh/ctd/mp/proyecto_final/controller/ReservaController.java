@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "reservas", description = "Gestión de Reservas")
 @RestController
 @RequestMapping("/api/reservas")
 public class ReservaController {

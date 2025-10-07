@@ -8,7 +8,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "productos", description = "Gestión de Productos")
 @RestController
 @RequestMapping("/api/productos")
 public class ProductoController {
