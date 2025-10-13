@@ -1,3 +1,7 @@
+# Archivos Locales a ignorar en la nueva raíz
+BDH2/
+*.zip
+
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
