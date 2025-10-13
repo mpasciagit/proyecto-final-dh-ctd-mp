@@ -21,28 +21,28 @@ public class CategoriaController {
     }
 
     // 🔹 Crear categoría (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping
     public ResponseEntity<CategoriaDTO> crear(@RequestBody CategoriaDTO dto) {
         return ResponseEntity.ok(categoriaService.save(dto));
     }
 
     // 🔹 Buscar por ID (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<CategoriaDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(categoriaService.findById(id));
     }
 
     // 🔹 Listar todas (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping
     public ResponseEntity<List<CategoriaDTO>> listarTodas() {
         return ResponseEntity.ok(categoriaService.findAll());
     }
 
     // 🔹 Actualizar categoría (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<CategoriaDTO> actualizar(@PathVariable Long id, @RequestBody CategoriaDTO dto) {
         dto.setId(id);
@@ -50,7 +50,7 @@ public class CategoriaController {
     }
 
     // 🔹 Eliminar categoría (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         categoriaService.delete(id);

@@ -13,6 +13,7 @@ import com.dh.ctd.mp.proyecto_final.repository.UsuarioRepository;
 import com.dh.ctd.mp.proyecto_final.service.IFavoritoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,7 +35,9 @@ public class FavoritoServiceImpl implements IFavoritoService {
         this.productoRepository = productoRepository;
     }
 
+    // 🔹 Crear favorito
     @Override
+    @Transactional
     public FavoritoDTO save(FavoritoDTO favoritoDTO) {
         Usuario usuario = usuarioRepository.findById(favoritoDTO.getUsuarioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + favoritoDTO.getUsuarioId()));
@@ -42,7 +45,7 @@ public class FavoritoServiceImpl implements IFavoritoService {
         Producto producto = productoRepository.findById(favoritoDTO.getProductoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + favoritoDTO.getProductoId()));
 
-        // Validar duplicado: ¿ya existe favorito para este usuario y producto?
+        // Validar duplicado
         boolean exists = favoritoRepository.existsByUsuarioAndProducto(usuario, producto);
         if (exists) {
             throw new DuplicateResourceException("El usuario ya marcó este producto como favorito.");
@@ -60,14 +63,18 @@ public class FavoritoServiceImpl implements IFavoritoService {
         return FavoritoMapper.toDTO(saved);
     }
 
+    // 🔹 Buscar por ID
     @Override
+    @Transactional(readOnly = true)
     public FavoritoDTO findById(Long id) {
         return favoritoRepository.findById(id)
                 .map(FavoritoMapper::toDTO)
                 .orElseThrow(() -> new ResourceNotFoundException("Favorito no encontrado con id: " + id));
     }
 
+    // 🔹 Listar todos
     @Override
+    @Transactional(readOnly = true)
     public List<FavoritoDTO> findAll() {
         return favoritoRepository.findAll()
                 .stream()
@@ -75,7 +82,9 @@ public class FavoritoServiceImpl implements IFavoritoService {
                 .collect(Collectors.toList());
     }
 
+    // 🔹 Eliminar
     @Override
+    @Transactional
     public void delete(Long id) {
         if (!favoritoRepository.existsById(id)) {
             throw new ResourceNotFoundException("No se pudo eliminar. Favorito no encontrado con id: " + id);
@@ -83,7 +92,9 @@ public class FavoritoServiceImpl implements IFavoritoService {
         favoritoRepository.deleteById(id);
     }
 
+    // 🔹 Listar por usuario
     @Override
+    @Transactional(readOnly = true)
     public List<FavoritoDTO> findByUsuarioId(Long usuarioId) {
         return favoritoRepository.findByUsuarioId(usuarioId)
                 .stream()

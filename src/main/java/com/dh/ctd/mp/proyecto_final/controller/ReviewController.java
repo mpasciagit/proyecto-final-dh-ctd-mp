@@ -21,7 +21,7 @@ public class ReviewController {
     }
 
     // 🔹 Crear review (solo USER autenticado)
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN','SUPER_ADMIN')")
     @PostMapping
     public ResponseEntity<ReviewDTO> create(@RequestBody ReviewDTO reviewDTO) {
         ReviewDTO saved = reviewService.save(reviewDTO);
@@ -29,7 +29,7 @@ public class ReviewController {
     }
 
     // 🔹 Obtener review por ID (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ReviewDTO> getById(@PathVariable Long id) {
         ReviewDTO review = reviewService.findById(id);
@@ -37,7 +37,7 @@ public class ReviewController {
     }
 
     // 🔹 Listar todas las reviews (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping
     public ResponseEntity<List<ReviewDTO>> getAll() {
         return ResponseEntity.ok(reviewService.findAll());
@@ -46,7 +46,7 @@ public class ReviewController {
     // 🔹 Eliminar review (USER o ADMIN)
     // Si más adelante querés controlar que un USER solo elimine *su* propia review,
     // lo hacemos con una validación en el servicio.
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         reviewService.delete(id);
@@ -54,7 +54,7 @@ public class ReviewController {
     }
 
     // 🔹 Reviews por producto (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/producto/{productoId}")
     public ResponseEntity<List<ReviewDTO>> getByProductoId(@PathVariable Long productoId) {
         return ResponseEntity.ok(reviewService.findByProductoId(productoId));
@@ -62,7 +62,7 @@ public class ReviewController {
 
     // 🔹 Reviews por usuario (solo ADMIN)
     // Porque puede ser sensible mostrar qué usuario escribió qué.
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<ReviewDTO>> getByUsuarioId(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(reviewService.findByUsuarioId(usuarioId));

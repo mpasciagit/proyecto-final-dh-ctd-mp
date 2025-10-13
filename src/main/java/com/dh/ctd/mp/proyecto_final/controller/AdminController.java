@@ -16,7 +16,7 @@ public class AdminController {
     private final AuthenticationService authenticationService;
 
     // --- Resetear contraseña de un usuario (ADMIN) ---
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN')")
     @PostMapping("/reset-password/{userId}")
     public ResponseEntity<?> resetUserPassword(@PathVariable Long userId) {
         authenticationService.resetPasswordByAdmin(userId);

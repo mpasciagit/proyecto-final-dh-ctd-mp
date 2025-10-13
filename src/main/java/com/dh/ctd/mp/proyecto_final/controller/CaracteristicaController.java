@@ -17,28 +17,28 @@ public class CaracteristicaController {
     private ICaracteristicaService caracteristicaService;
 
     // 🔹 Crear (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping
     public ResponseEntity<CaracteristicaDTO> crear(@RequestBody CaracteristicaDTO dto) {
         return ResponseEntity.ok(caracteristicaService.save(dto));
     }
 
     // 🔹 Buscar por ID (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<CaracteristicaDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(caracteristicaService.findById(id));
     }
 
     // 🔹 Listar todas (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping
     public ResponseEntity<List<CaracteristicaDTO>> listarTodas() {
         return ResponseEntity.ok(caracteristicaService.findAll());
     }
 
     // 🔹 Actualizar (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<CaracteristicaDTO> actualizar(@PathVariable Long id, @RequestBody CaracteristicaDTO dto) {
         dto.setId(id);
@@ -46,7 +46,7 @@ public class CaracteristicaController {
     }
 
     // 🔹 Eliminar (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         caracteristicaService.delete(id);

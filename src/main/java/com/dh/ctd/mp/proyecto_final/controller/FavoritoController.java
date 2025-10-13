@@ -21,28 +21,28 @@ public class FavoritoController {
     }
 
     // 🔹 Crear favorito (solo USER)
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN', 'SUPER_ADMIN')")
     @PostMapping
     public ResponseEntity<FavoritoDTO> crearFavorito(@RequestBody FavoritoDTO favoritoDTO) {
         return ResponseEntity.ok(favoritoService.save(favoritoDTO));
     }
 
     // 🔹 Obtener favorito por ID (ADMIN o USER)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<FavoritoDTO> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(favoritoService.findById(id));
     }
 
     // 🔹 Listar todos los favoritos (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping
     public ResponseEntity<List<FavoritoDTO>> listarTodos() {
         return ResponseEntity.ok(favoritoService.findAll());
     }
 
     // 🔹 Eliminar favorito (solo USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         favoritoService.delete(id);
@@ -50,7 +50,7 @@ public class FavoritoController {
     }
 
     // 🔹 Listar favoritos por usuario (solo USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<FavoritoDTO>> listarPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(favoritoService.findByUsuarioId(usuarioId));
