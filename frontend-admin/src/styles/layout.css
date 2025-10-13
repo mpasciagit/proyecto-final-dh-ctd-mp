@@ -1,0 +1,120 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  font-family: sans-serif;
+}
+
+.sidebar {
+  width: 220px;
+  background-color: #1e293b;
+  color: white;
+  padding: 1rem;
+}
+
+.sidebar h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin: 0.8rem 0;
+}
+
+.sidebar a {
+  color: #cbd5e1;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  color: white;
+}
+
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #f1f5f9;
+}
+
+.navbar {
+  background-color: white;
+  padding: 1rem;
+  border-bottom: 1px solid #ccc;
+}
+
+.content {
+  flex-grow: 1;
+  padding: 2rem;
+}
+/* --- Sidebar accordion --- */
+.accordion-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+}
+
+.accordion-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.submenu {
+  list-style: none;
+  margin: 0.25rem 0 0.5rem 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.submenu li a {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  text-decoration: none;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.submenu li a:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.submenu li a.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+/* Estilo base del link del sidebar */
+.sidebar a {
+  color: #ccc;           /* gris claro por defecto */
+  text-decoration: none;
+  font-weight: normal;
+  display: block;
+  padding: 8px 12px;
+  transition: background 0.2s;
+}
+
+/* Al pasar el mouse */
+.sidebar a:hover {
+  background: #333;
+  color: white;
+}
+
+/* Estilo cuando el link está activo */
+.sidebar a.active {
+  font-weight: bold;
+  color: white;
+  background: #222;       /* fondo más oscuro */
+  border-radius: 6px;
+}
