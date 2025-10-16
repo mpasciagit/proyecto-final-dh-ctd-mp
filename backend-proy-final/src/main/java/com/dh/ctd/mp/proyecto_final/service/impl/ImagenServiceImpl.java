@@ -75,4 +75,28 @@ public class ImagenServiceImpl implements IImagenService {
                 .map(ImagenMapper::toDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public ImagenDTO update(ImagenDTO imagenDTO) {
+        if (imagenDTO.getId() == null) {
+            throw new InvalidDataException("El ID de la imagen es obligatorio para modificar");
+        }
+
+        Imagen imagenExistente = imagenRepository.findById(imagenDTO.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Imagen no encontrada con id: " + imagenDTO.getId()));
+
+        if (imagenDTO.getUrl() != null && !imagenDTO.getUrl().isBlank()) {
+            imagenExistente.setUrl(imagenDTO.getUrl());
+        }
+
+        if (imagenDTO.getProductoId() != null) {
+            Producto producto = productoRepository.findById(imagenDTO.getProductoId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Producto no encontrado con id: " + imagenDTO.getProductoId()));
+            imagenExistente.setProducto(producto);
+        }
+
+        Imagen actualizada = imagenRepository.save(imagenExistente);
+        return ImagenMapper.toDTO(actualizada);
+    }
 }

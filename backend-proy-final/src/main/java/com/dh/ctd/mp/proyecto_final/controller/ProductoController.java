@@ -23,7 +23,7 @@ public class ProductoController {
     }
 
     // ----------------- CREAR -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:CREAR')")
     @PostMapping
     public ResponseEntity<ProductoDTO> crearProducto(@RequestBody ProductoDTO productoDTO) {
         ProductoDTO nuevoProducto = productoService.save(productoDTO);
@@ -31,21 +31,21 @@ public class ProductoController {
     }
 
     // ----------------- OBTENER POR ID -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:BUSCAR')")
     @GetMapping("/{id}")
     public ResponseEntity<ProductoDTO> obtenerProductoPorId(@PathVariable Long id) {
         return ResponseEntity.ok(productoService.findById(id));
     }
 
     // ----------------- LISTAR TODOS -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:LISTAR')")
     @GetMapping
     public ResponseEntity<List<ProductoDTO>> listarTodos() {
         return ResponseEntity.ok(productoService.findAll());
     }
 
     // ----------------- ACTUALIZAR -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:MODIFICAR')")
     @PutMapping("/{id}")
     public ResponseEntity<ProductoDTO> actualizarProducto(@PathVariable Long id,
                                                           @RequestBody ProductoDTO productoDTO) {
@@ -54,7 +54,7 @@ public class ProductoController {
     }
 
     // ----------------- ELIMINAR -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:ELIMINAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
         productoService.delete(id);
@@ -62,35 +62,35 @@ public class ProductoController {
     }
 
     // ----------------- BUSCAR POR NOMBRE -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:BUSCAR')")
     @GetMapping("/nombre/{nombre}")
     public ResponseEntity<List<ProductoDTO>> buscarPorNombre(@PathVariable String nombre) {
         return ResponseEntity.ok(productoService.findByNombre(nombre));
     }
 
     // ----------------- BUSCAR POR CATEGORÍA -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:BUSCAR')")
     @GetMapping("/categoria/{categoriaId}")
     public ResponseEntity<List<ProductoDTO>> buscarPorCategoria(@PathVariable Long categoriaId) {
         return ResponseEntity.ok(productoService.findByCategoria(categoriaId));
     }
 
     // ----------------- LISTAR RESERVABLES -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:LISTAR')")
     @GetMapping("/reservables")
     public ResponseEntity<List<ProductoDTO>> listarReservables() {
         return ResponseEntity.ok(productoService.findReservables());
     }
 
     // ----------------- LISTAR CON STOCK -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:LISTAR')")
     @GetMapping("/disponibles")
     public ResponseEntity<List<ProductoDTO>> listarConStockDisponible() {
         return ResponseEntity.ok(productoService.findConStockDisponible());
     }
 
     // ----------------- VERIFICAR DISPONIBILIDAD -----------------
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('PRODUCTO:BUSCAR')")
     @GetMapping("/{id}/disponibilidad/{cantidad}")
     public ResponseEntity<Boolean> verificarDisponibilidad(@PathVariable Long id,
                                                            @PathVariable int cantidad) {

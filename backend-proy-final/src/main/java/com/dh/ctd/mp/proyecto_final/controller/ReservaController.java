@@ -26,8 +26,7 @@ public class ReservaController {
     }
 
     // ----------------- CREAR -----------------
-    // ✅ Solo USER autenticado puede crear reservas
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:CREAR')")
     @PostMapping
     public ResponseEntity<ReservaDTO> crearReserva(@RequestBody ReservaDTO reservaDTO) {
         ReservaDTO nuevaReserva = reservaService.save(reservaDTO);
@@ -35,9 +34,7 @@ public class ReservaController {
     }
 
     // ----------------- OBTENER POR ID -----------------
-    // ✅ USER autenticado puede ver sus reservas
-    // ✅ ADMIN puede ver cualquier reserva
-    @PreAuthorize("hasAnyRole('USER','ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:BUSCAR')")
     @GetMapping("/{id}")
     public ResponseEntity<ReservaDTO> obtenerReservaPorId(@PathVariable Long id) {
         ReservaDTO reserva = reservaService.findById(id);
@@ -45,17 +42,14 @@ public class ReservaController {
     }
 
     // ----------------- LISTAR TODAS -----------------
-    // ✅ Solo ADMIN puede listar todas las reservas del sistema
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:LISTAR')")
     @GetMapping
     public ResponseEntity<List<ReservaDTO>> listarTodas() {
         return ResponseEntity.ok(reservaService.findAll());
     }
 
     // ----------------- ACTUALIZAR -----------------
-    // ✅ USER puede modificar su propia reserva (control adicional podría ir en el service)
-    // ✅ ADMIN puede actualizar cualquiera
-    @PreAuthorize("hasAnyRole('USER','ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:MODIFICAR')")
     @PutMapping("/{id}")
     public ResponseEntity<ReservaDTO> actualizarReserva(@PathVariable Long id, @RequestBody ReservaDTO reservaDTO) {
         reservaDTO.setId(id);
@@ -64,8 +58,7 @@ public class ReservaController {
     }
 
     // ----------------- ELIMINAR -----------------
-    // ✅ Solo ADMIN puede eliminar reservas
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:ELIMINAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarReserva(@PathVariable Long id) {
         reservaService.delete(id);
@@ -73,25 +66,21 @@ public class ReservaController {
     }
 
     // ----------------- CONSULTAS POR USUARIO -----------------
-    // ✅ Solo USER autenticado o ADMIN puede ver reservas por usuario
-    @PreAuthorize("hasAnyRole('USER','ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:BUSCAR')")
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<ReservaDTO>> obtenerPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(reservaService.findByUsuario(usuarioId));
     }
 
     // ----------------- CONSULTAS POR PRODUCTO -----------------
-    // ✅ ADMIN puede consultar todas las reservas de un producto
-    // ✅ USER no debería tener acceso (no tiene sentido que vea reservas de otros usuarios)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:LISTAR')")
     @GetMapping("/producto/{productoId}")
     public ResponseEntity<List<ReservaDTO>> obtenerPorProducto(@PathVariable Long productoId) {
         return ResponseEntity.ok(reservaService.findByProducto(productoId));
     }
 
     // ----------------- RANGO DE FECHAS -----------------
-    // ✅ ADMIN puede consultar por rango
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:LISTAR')")
     @GetMapping("/rango-fechas")
     public ResponseEntity<List<ReservaDTO>> obtenerPorRangoFechas(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
@@ -100,15 +89,13 @@ public class ReservaController {
     }
 
     // ----------------- FILTROS POR ESTADO -----------------
-    // ✅ ADMIN puede consultar cualquier reserva por estado
-    // ✅ USER puede consultar sus propias reservas por estado
-    @PreAuthorize("hasAnyRole('USER','ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:BUSCAR')")
     @GetMapping("/estado/{estado}")
     public ResponseEntity<List<ReservaDTO>> obtenerPorEstado(@PathVariable EstadoReserva estado) {
         return ResponseEntity.ok(reservaService.findByEstado(estado));
     }
 
-    @PreAuthorize("hasAnyRole('USER','ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:BUSCAR')")
     @GetMapping("/usuario/{usuarioId}/estado/{estado}")
     public ResponseEntity<List<ReservaDTO>> obtenerPorUsuarioYEstado(
             @PathVariable Long usuarioId,
@@ -116,7 +103,7 @@ public class ReservaController {
         return ResponseEntity.ok(reservaService.findByUsuarioAndEstado(usuarioId, estado));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('RESERVA:LISTAR')")
     @GetMapping("/producto/{productoId}/estado/{estado}")
     public ResponseEntity<List<ReservaDTO>> obtenerPorProductoYEstado(
             @PathVariable Long productoId,

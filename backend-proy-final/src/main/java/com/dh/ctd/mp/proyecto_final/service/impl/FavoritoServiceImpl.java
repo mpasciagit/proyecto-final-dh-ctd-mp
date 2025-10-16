@@ -101,4 +101,30 @@ public class FavoritoServiceImpl implements IFavoritoService {
                 .map(FavoritoMapper::toDTO)
                 .collect(Collectors.toList());
     }
+
+    // 🔹 Modificar favorito
+    @Override
+    @Transactional
+    public FavoritoDTO update(FavoritoDTO favoritoDTO) {
+        Favorito favorito = favoritoRepository.findById(favoritoDTO.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Favorito no encontrado con id: " + favoritoDTO.getId()));
+
+        // Actualiza los campos que se pueden modificar
+        if (favoritoDTO.getUsuarioId() != null && !favoritoDTO.getUsuarioId().equals(favorito.getUsuario().getId())) {
+            Usuario usuario = usuarioRepository.findById(favoritoDTO.getUsuarioId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + favoritoDTO.getUsuarioId()));
+            favorito.setUsuario(usuario);
+        }
+
+        if (favoritoDTO.getProductoId() != null && !favoritoDTO.getProductoId().equals(favorito.getProducto().getId())) {
+            Producto producto = productoRepository.findById(favoritoDTO.getProductoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + favoritoDTO.getProductoId()));
+            favorito.setProducto(producto);
+        }
+
+        // Puedes agregar más campos a actualizar si es necesario
+
+        Favorito actualizado = favoritoRepository.save(favorito);
+        return FavoritoMapper.toDTO(actualizado);
+    }
 }

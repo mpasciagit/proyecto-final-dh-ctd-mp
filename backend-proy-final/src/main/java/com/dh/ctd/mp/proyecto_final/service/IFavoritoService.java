@@ -10,4 +10,5 @@ public interface IFavoritoService {
     List<FavoritoDTO> findAll();
     void delete(Long id);
     List<FavoritoDTO> findByUsuarioId(Long usuarioId);
+    FavoritoDTO update(FavoritoDTO favoritoDTO);
 }

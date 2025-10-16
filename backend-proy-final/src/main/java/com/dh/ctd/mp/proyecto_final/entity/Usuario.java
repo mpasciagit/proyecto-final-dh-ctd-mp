@@ -2,7 +2,6 @@ package com.dh.ctd.mp.proyecto_final.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,8 +34,7 @@ public class Usuario {
     @JoinColumn(name = "rol_id", nullable = false)
     private Rol rol;
 
-    // --- Relaciones con otras entidades ---
-
+    // Relaciones con otras entidades
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Favorito> favoritos = new HashSet<>();
 
@@ -46,5 +44,3 @@ public class Usuario {
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Reserva> reservas = new HashSet<>();
 }
-
-

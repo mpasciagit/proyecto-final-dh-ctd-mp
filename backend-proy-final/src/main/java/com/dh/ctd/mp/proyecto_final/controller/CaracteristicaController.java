@@ -16,37 +16,37 @@ public class CaracteristicaController {
     @Autowired
     private ICaracteristicaService caracteristicaService;
 
-    // 🔹 Crear (solo ADMIN)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Crear
+    @PreAuthorize("hasAuthority('CARACTERISTICA:CREAR')")
     @PostMapping
     public ResponseEntity<CaracteristicaDTO> crear(@RequestBody CaracteristicaDTO dto) {
         return ResponseEntity.ok(caracteristicaService.save(dto));
     }
 
-    // 🔹 Buscar por ID (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Buscar por ID
+    @PreAuthorize("hasAuthority('CARACTERISTICA:BUSCAR')")
     @GetMapping("/{id}")
     public ResponseEntity<CaracteristicaDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(caracteristicaService.findById(id));
     }
 
-    // 🔹 Listar todas (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Listar todas
+    @PreAuthorize("hasAuthority('CARACTERISTICA:LISTAR')")
     @GetMapping
     public ResponseEntity<List<CaracteristicaDTO>> listarTodas() {
         return ResponseEntity.ok(caracteristicaService.findAll());
     }
 
-    // 🔹 Actualizar (solo ADMIN)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Actualizar
+    @PreAuthorize("hasAuthority('CARACTERISTICA:MODIFICAR')")
     @PutMapping("/{id}")
     public ResponseEntity<CaracteristicaDTO> actualizar(@PathVariable Long id, @RequestBody CaracteristicaDTO dto) {
         dto.setId(id);
         return ResponseEntity.ok(caracteristicaService.update(dto));
     }
 
-    // 🔹 Eliminar (solo ADMIN)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Eliminar
+    @PreAuthorize("hasAuthority('CARACTERISTICA:ELIMINAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         caracteristicaService.delete(id);

@@ -31,4 +31,18 @@ public class Rol {
     // Relación inversa: un rol puede estar en muchos usuarios
     @OneToMany(mappedBy = "rol", fetch = FetchType.LAZY)
     private Set<Usuario> usuarios = new HashSet<>();
+
+    // Relación muchos a muchos con Permiso
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "rol_permiso",
+        joinColumns = @JoinColumn(name = "rol_id"),
+        inverseJoinColumns = @JoinColumn(name = "permiso_id")
+    )
+    private Set<Permiso> permisos = new HashSet<>();
+
+    // Constructor adicional requerido por el inicializador
+    public Rol(String nombre) {
+        this.nombre = nombre;
+    }
 }

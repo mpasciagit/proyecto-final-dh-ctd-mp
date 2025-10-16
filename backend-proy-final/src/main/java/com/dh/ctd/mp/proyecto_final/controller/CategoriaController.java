@@ -20,37 +20,37 @@ public class CategoriaController {
         this.categoriaService = categoriaService;
     }
 
-    // 🔹 Crear categoría (solo ADMIN)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Crear categoría
+    @PreAuthorize("hasAuthority('CATEGORIA:CREAR')")
     @PostMapping
     public ResponseEntity<CategoriaDTO> crear(@RequestBody CategoriaDTO dto) {
         return ResponseEntity.ok(categoriaService.save(dto));
     }
 
-    // 🔹 Buscar por ID (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Buscar por ID
+    @PreAuthorize("hasAuthority('CATEGORIA:BUSCAR')")
     @GetMapping("/{id}")
     public ResponseEntity<CategoriaDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(categoriaService.findById(id));
     }
 
-    // 🔹 Listar todas (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Listar todas
+    @PreAuthorize("hasAuthority('CATEGORIA:LISTAR')")
     @GetMapping
     public ResponseEntity<List<CategoriaDTO>> listarTodas() {
         return ResponseEntity.ok(categoriaService.findAll());
     }
 
-    // 🔹 Actualizar categoría (solo ADMIN)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Actualizar categoría
+    @PreAuthorize("hasAuthority('CATEGORIA:MODIFICAR')")
     @PutMapping("/{id}")
     public ResponseEntity<CategoriaDTO> actualizar(@PathVariable Long id, @RequestBody CategoriaDTO dto) {
         dto.setId(id);
         return ResponseEntity.ok(categoriaService.update(dto));
     }
 
-    // 🔹 Eliminar categoría (solo ADMIN)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Eliminar categoría
+    @PreAuthorize("hasAuthority('CATEGORIA:ELIMINAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         categoriaService.delete(id);

@@ -10,4 +10,5 @@ public interface IImagenService {
     List<ImagenDTO> findAll();
     void delete(Long id);
     List<ImagenDTO> findByProductoId(Long productoId);
+    ImagenDTO update(ImagenDTO imagenDTO);
 }

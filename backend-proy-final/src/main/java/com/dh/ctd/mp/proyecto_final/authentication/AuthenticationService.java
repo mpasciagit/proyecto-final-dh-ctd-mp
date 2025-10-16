@@ -142,21 +142,4 @@ public class AuthenticationService {
         tokenEntity.setUsed(true);
         tokenRepository.save(tokenEntity);
     }
-
-    // ------------------- RESET POR ADMIN (contraseña temporal) -------------------
-    @Transactional
-    public void resetPasswordByAdmin(Long userId) {
-        Usuario usuario = usuarioRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + userId));
-
-        // Generar contraseña temporal (8 caracteres)
-        String tempPassword = UUID.randomUUID().toString().substring(0, 8);
-
-        // Guardar contraseña hasheada
-        usuario.setPassword(passwordEncoder.encode(tempPassword));
-        usuarioRepository.save(usuario);
-
-        // Notificar (por ahora LoggingEmailService)
-        emailService.sendResetPasswordEmail(usuario.getEmail(), tempPassword);
-    }
 }

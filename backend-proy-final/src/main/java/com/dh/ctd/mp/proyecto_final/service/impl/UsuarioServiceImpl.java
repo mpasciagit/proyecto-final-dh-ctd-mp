@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -125,13 +126,38 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 .collect(Collectors.toList());
     }
 
-    // 9️⃣ Resetear password (solo ADMIN/SUPER_ADMIN)
+    // 9️⃣ Resetear password (flujo normal o usuario)
     @Override
     public void resetPassword(Long userId, String newPassword) {
         Usuario usuario = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + userId));
+
         usuario.setPassword(passwordEncoder.encode(newPassword));
         usuarioRepository.save(usuario);
     }
 
+    // 🔟 Reset administrativo (genera una temporal)
+    @Override
+    public void resetPasswordByAdmin(Long userId) {
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + userId));
+
+        String tempPassword = generarPasswordTemporal();
+        usuario.setPassword(passwordEncoder.encode(tempPassword));
+        usuarioRepository.save(usuario);
+
+        // ⚙️ Podés agregar: envío de email, logging o auditoría
+        System.out.println("🔐 Password temporal generada para usuario " + usuario.getEmail() + ": " + tempPassword);
+    }
+
+    // Utilidad privada para generar passwords temporales seguras
+    private String generarPasswordTemporal() {
+        final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
 }

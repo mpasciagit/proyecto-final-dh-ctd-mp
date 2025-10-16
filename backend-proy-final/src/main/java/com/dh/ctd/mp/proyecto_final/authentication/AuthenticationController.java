@@ -2,7 +2,6 @@ package com.dh.ctd.mp.proyecto_final.authentication;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,13 +48,5 @@ public class AuthenticationController {
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
         authenticationService.resetPassword(request);
         return ResponseEntity.ok("Contraseña restablecida exitosamente");
-    }
-
-    // --- Reset de contraseña por ADMIN ---
-    @PostMapping("/admin/reset-password/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> resetPasswordByAdmin(@PathVariable Long userId) {
-        authenticationService.resetPasswordByAdmin(userId);
-        return ResponseEntity.ok("Contraseña temporal generada y enviada al usuario");
     }
 }

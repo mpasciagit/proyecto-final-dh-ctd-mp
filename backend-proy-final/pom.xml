@@ -13,7 +13,7 @@
 	</parent>
 
 	<groupId>com.dh.ctd.mp</groupId>
-	<artifactId>proyecto-final</artifactId>
+	<artifactId>backend-proy-final</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>proyecto-final</name>
 	<description>Aplicación de Reservas desarrollada como Proyecto Final Digital House</description>

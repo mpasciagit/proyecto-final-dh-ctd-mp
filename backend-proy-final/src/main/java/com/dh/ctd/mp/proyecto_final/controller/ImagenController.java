@@ -20,39 +20,47 @@ public class ImagenController {
         this.imagenService = imagenService;
     }
 
-    // 🔹 Crear imagen (solo ADMIN)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Crear imagen
+    @PreAuthorize("hasAuthority('IMAGEN:CREAR')")
     @PostMapping
-    public ResponseEntity<ImagenDTO> crearImagen(@RequestBody ImagenDTO imagenDTO) {
+    public ResponseEntity<ImagenDTO> crear(@RequestBody ImagenDTO imagenDTO) {
         return ResponseEntity.ok(imagenService.save(imagenDTO));
     }
 
-    // 🔹 Obtener imagen por ID (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Buscar imagen por ID
+    @PreAuthorize("hasAuthority('IMAGEN:BUSCAR')")
     @GetMapping("/{id}")
-    public ResponseEntity<ImagenDTO> obtenerImagen(@PathVariable Long id) {
+    public ResponseEntity<ImagenDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(imagenService.findById(id));
     }
 
-    // 🔹 Listar todas las imágenes (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Listar todas las imágenes
+    @PreAuthorize("hasAuthority('IMAGEN:LISTAR')")
     @GetMapping
-    public ResponseEntity<List<ImagenDTO>> listarImagenes() {
+    public ResponseEntity<List<ImagenDTO>> listarTodas() {
         return ResponseEntity.ok(imagenService.findAll());
     }
 
-    // 🔹 Eliminar imagen (solo ADMIN)
-    @PreAuthorize("hasRole('ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Eliminar imagen
+    @PreAuthorize("hasAuthority('IMAGEN:ELIMINAR')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarImagen(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         imagenService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    // 🔹 Listar imágenes por producto (USER o ADMIN)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN')")
+    // 🔹 Listar imágenes por producto
+    @PreAuthorize("hasAuthority('IMAGEN:LISTAR')")
     @GetMapping("/producto/{productoId}")
     public ResponseEntity<List<ImagenDTO>> listarPorProducto(@PathVariable Long productoId) {
         return ResponseEntity.ok(imagenService.findByProductoId(productoId));
+    }
+
+    // 🔹 Modificar imagen
+    @PreAuthorize("hasAuthority('IMAGEN:MODIFICAR')")
+    @PutMapping("/{id}")
+    public ResponseEntity<ImagenDTO> modificar(@PathVariable Long id, @RequestBody ImagenDTO imagenDTO) {
+        imagenDTO.setId(id);
+        return ResponseEntity.ok(imagenService.update(imagenDTO));
     }
 }
