@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #f8fafc;
+}
+
+/* Estilos personalizados para React DatePicker */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  width: 100% !important;
+}
+
+.react-datepicker {
+  font-family: 'Inter', system-ui, sans-serif !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.react-datepicker__header {
+  background-color: #2563eb !important;
+  border-bottom: 1px solid #1d4ed8 !important;
+  border-top-left-radius: 0.5rem !important;
+  border-top-right-radius: 0.5rem !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: white !important;
+}
+
+.react-datepicker__day {
+  border-radius: 0.375rem !important;
+  margin: 0.125rem !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--in-selecting-range,
+.react-datepicker__day--in-range {
+  background-color: #2563eb !important;
+  color: white !important;
+}
+
+.react-datepicker__day--range-start,
+.react-datepicker__day--range-end {
+  background-color: #1d4ed8 !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+.react-datepicker__navigation {
+  top: 0.75rem !important;
+}
+
+.react-datepicker__navigation--previous {
+  left: 0.75rem !important;
+}
+
+.react-datepicker__navigation--next {
+  right: 0.75rem !important;
+}
+
+/* Estilos para fechas ocupadas */
+.react-datepicker__day--occupied {
+  background-color: #fecaca !important;
+  color: #991b1b !important;
+  position: relative;
+}
+
+.react-datepicker__day--occupied:hover {
+  background-color: #f87171 !important;
+  color: #7f1d1d !important;
+}
+
+.react-datepicker__day--occupied::after {
+  content: '✕';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* Estilos para el calendario inline */
+.react-datepicker--time-only {
+  width: auto !important;
+}
+
+.react-datepicker__month-container {
+  width: 280px !important;
+}
+
+/* Responsive para calendarios dobles */
+@media (max-width: 768px) {
+  .react-datepicker__month-container {
+    width: 100% !important;
+  }
+  
+  .react-datepicker {
+    width: 100% !important;
+  }
+}
+
+/* Animaciones para notificaciones */
+@keyframes progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-progress {
+  animation: progress linear forwards;
+}
+
+/* Animaciones de entrada y salida para toasts */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: slideInRight 0.3s ease-out forwards;
+}
+
+.toast-exit {
+  animation: slideOutRight 0.3s ease-in forwards;
+}
