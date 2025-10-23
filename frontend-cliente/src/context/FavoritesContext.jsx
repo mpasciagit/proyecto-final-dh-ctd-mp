@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import favoriteService from '../services/favoriteService';
+import productService from '../services/productService';
 
 const FavoritesContext = createContext();
 
@@ -16,67 +18,117 @@ export const FavoritesProvider = ({ children }) => {
   const [favorites, setFavorites] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const FAVORITES_KEY = 'user_favorites';
-
-  // Cargar favoritos del usuario desde localStorage
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const savedFavorites = localStorage.getItem(`${FAVORITES_KEY}_${user.id}`);
-      if (savedFavorites) {
-        try {
-          setFavorites(JSON.parse(savedFavorites));
-        } catch (error) {
-          console.error('Error loading favorites:', error);
-          setFavorites([]);
-        }
-      }
-    } else {
+  // 🔄 Cargar favoritos del usuario desde el backend
+  const loadUserFavorites = async () => {
+    if (!isAuthenticated || !user?.id) {
       setFavorites([]);
+      return;
     }
-  }, [user, isAuthenticated]);
 
-  // Guardar favoritos en localStorage
-  const saveFavorites = (newFavorites) => {
-    if (isAuthenticated && user) {
-      localStorage.setItem(`${FAVORITES_KEY}_${user.id}`, JSON.stringify(newFavorites));
-      setFavorites(newFavorites);
+    try {
+      setIsLoading(true);
+      console.log('🔍 Cargando favoritos del usuario:', user.id);
+      
+      // Obtener favoritos del backend
+      let backendFavorites;
+      try {
+        backendFavorites = await favoriteService.getFavoritesByUser(user.id);
+        console.log('📋 Favoritos del backend:', backendFavorites);
+      } catch (favoriteError) {
+        console.error('❌ ERROR específico al obtener favoritos:', favoriteError);
+        console.error('❌ Mensaje del error:', favoriteError.message);
+        console.error('❌ Detalles del error:', favoriteError);
+        throw favoriteError;
+      }
+      
+      // Enriquecer cada favorito con datos completos del producto
+      const enrichedFavorites = await Promise.all(
+        backendFavorites.map(async (favorite) => {
+          try {
+            const productData = await productService.getProductById(favorite.productoId);
+            console.log(`📦 Datos del producto ${favorite.productoId}:`, productData);
+            
+            // Obtener imágenes del producto
+            let productImages = [];
+            try {
+              productImages = await productService.getProductImages(favorite.productoId);
+            } catch (imageError) {
+              console.warn(`⚠️ No se pudieron obtener imágenes para producto ${favorite.productoId}:`, imageError);
+            }
+            
+            return {
+              id: favorite.productoId, // Usar productoId como id para consistencia
+              favoriteId: favorite.id, // ID del registro de favorito
+              nombre: productData?.nombre || 'Producto sin nombre',
+              categoria: productData?.categoriaNombre || 'Sin categoría',
+              precio: productData?.precio || 0,
+              pasajeros: productData?.pasajeros || 0,
+              ubicacion: productData?.ubicacion || 'Ubicación no disponible',
+              imagen: productImages?.[0]?.url || productData?.imagenes?.[0]?.url || productData?.imagen || '/placeholder-car.jpg',
+              addedAt: favorite.fechaCreacion || favorite.createdAt || new Date().toISOString()
+            };
+          } catch (productError) {
+            console.error(`❌ Error al obtener datos del producto ${favorite.productoId}:`, productError);
+            // Retornar datos mínimos si falla la carga del producto
+            return {
+              id: favorite.productoId,
+              favoriteId: favorite.id,
+              nombre: `Producto ${favorite.productoId}`,
+              categoria: 'Sin categoría',
+              precio: 0,
+              pasajeros: 0,
+              ubicacion: 'N/A',
+              imagen: '/placeholder-car.jpg',
+              addedAt: favorite.fechaCreacion || favorite.createdAt || new Date().toISOString()
+            };
+          }
+        })
+      );
+      
+      console.log('✅ Favoritos enriquecidos:', enrichedFavorites);
+      console.log('📊 Total de favoritos cargados:', enrichedFavorites.length);
+      setFavorites(enrichedFavorites);
+    } catch (error) {
+      console.error('❌ Error al cargar favoritos:', error);
+      console.error('❌ Tipo de error:', typeof error);
+      console.error('❌ Stack del error:', error.stack);
+      setFavorites([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Cargar favoritos cuando el usuario cambie
+  useEffect(() => {
+    loadUserFavorites();
+  }, [user, isAuthenticated]);
+
   // Agregar producto a favoritos
   const addToFavorites = async (product) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user?.id) {
       throw new Error('Debes iniciar sesión para agregar favoritos');
     }
 
+    console.log('🔍 Estado de autenticación:', { isAuthenticated, user });
     setIsLoading(true);
 
     try {
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Verificar si ya está en favoritos
       const isAlreadyFavorite = favorites.find(fav => fav.id === product.id);
       if (isAlreadyFavorite) {
         throw new Error('Este vehículo ya está en tus favoritos');
       }
 
-      const favoriteItem = {
-        id: product.id,
-        nombre: product.nombre,
-        categoria: product.categoria,
-        precio: product.precio,
-        pasajeros: product.pasajeros,
-        ubicacion: product.ubicacion,
-        imagen: product.imagen,
-        addedAt: new Date().toISOString()
-      };
-
-      const updatedFavorites = [...favorites, favoriteItem];
-      saveFavorites(updatedFavorites);
+      // Agregar al backend
+      console.log('❤️ Agregando a favoritos:', { usuarioId: user.id, productoId: product.id });
+      await favoriteService.addFavorite(user.id, product.id);
+      
+      // Recargar favoritos desde el backend
+      await loadUserFavorites();
 
       return { success: true, message: 'Agregado a favoritos' };
     } catch (error) {
+      console.error('❌ Error al agregar favorito:', error);
       return { success: false, error: error.message };
     } finally {
       setIsLoading(false);
@@ -85,21 +137,33 @@ export const FavoritesProvider = ({ children }) => {
 
   // Quitar producto de favoritos
   const removeFromFavorites = async (productId) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user?.id) {
       throw new Error('Debes iniciar sesión para gestionar favoritos');
     }
 
     setIsLoading(true);
 
     try {
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Encontrar el favorito por productId
+      const favorite = favorites.find(fav => fav.id === productId);
+      if (!favorite) {
+        throw new Error('Este producto no está en favoritos');
+      }
 
-      const updatedFavorites = favorites.filter(fav => fav.id !== productId);
-      saveFavorites(updatedFavorites);
+      // Eliminar del backend usando el favoriteId
+      console.log('🗑️ Eliminando favorito:', { favoriteId: favorite.favoriteId, productId });
+      if (!favorite.favoriteId) {
+        throw new Error('No se puede eliminar: ID de favorito no encontrado');
+      }
+      
+      await favoriteService.removeFavorite(favorite.favoriteId);
+      
+      // Recargar favoritos desde el backend
+      await loadUserFavorites();
 
       return { success: true, message: 'Eliminado de favoritos' };
     } catch (error) {
+      console.error('❌ Error al eliminar favorito:', error);
       return { success: false, error: error.message };
     } finally {
       setIsLoading(false);
@@ -108,18 +172,41 @@ export const FavoritesProvider = ({ children }) => {
 
   // Toggle favorito (agregar o quitar)
   const toggleFavorite = async (product) => {
-    const isFavorite = favorites.find(fav => fav.id === product.id);
+    const currentFavorite = favorites.find(fav => fav.id === product.id);
     
-    if (isFavorite) {
-      return await removeFromFavorites(product.id);
+    console.log('🔄 Toggle favorito:', { 
+      productId: product.id, 
+      productName: product.nombre,
+      isCurrentlyFavorite: !!currentFavorite,
+      currentFavorites: favorites.map(f => ({ id: f.id, name: f.nombre }))
+    });
+    
+    if (currentFavorite) {
+      console.log('➖ Eliminando de favoritos...');
+      const result = await removeFromFavorites(product.id);
+      console.log('✅ Resultado eliminación:', result);
+      return result;
     } else {
-      return await addToFavorites(product);
+      console.log('➕ Agregando a favoritos...');
+      const result = await addToFavorites(product);
+      console.log('✅ Resultado adición:', result);
+      return result;
     }
   };
 
   // Verificar si un producto es favorito
   const isFavorite = (productId) => {
-    return favorites.some(fav => fav.id === productId);
+    const result = favorites.some(fav => fav.id === productId);
+    // Solo logear si hay favoritos para evitar spam
+    if (favorites.length > 0) {
+      console.log('❓ Verificando isFavorite:', { 
+        productId, 
+        result, 
+        favoriteIds: favorites.map(f => f.id),
+        totalFavorites: favorites.length 
+      });
+    }
+    return result;
   };
 
   // Obtener todos los favoritos
@@ -129,19 +216,30 @@ export const FavoritesProvider = ({ children }) => {
 
   // Limpiar todos los favoritos
   const clearFavorites = async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user?.id) {
       throw new Error('Debes iniciar sesión para gestionar favoritos');
     }
 
     setIsLoading(true);
 
     try {
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Eliminar todos los favoritos del backend uno por uno
+      const deletePromises = favorites.map(async (favorite) => {
+        if (!favorite.favoriteId) {
+          console.warn('⚠️ Favorito sin ID, saltando:', favorite);
+          return;
+        }
+        return favoriteService.removeFavorite(favorite.favoriteId);
+      });
 
-      saveFavorites([]);
+      await Promise.all(deletePromises.filter(Boolean));
+      
+      // Recargar favoritos desde el backend
+      await loadUserFavorites();
+
       return { success: true, message: 'Favoritos eliminados' };
     } catch (error) {
+      console.error('❌ Error al limpiar favoritos:', error);
       return { success: false, error: error.message };
     } finally {
       setIsLoading(false);
@@ -153,13 +251,25 @@ export const FavoritesProvider = ({ children }) => {
     const total = favorites.length;
     const categories = {};
     
+    // Contar categorías, manejando valores undefined o vacíos
     favorites.forEach(fav => {
-      categories[fav.categoria] = (categories[fav.categoria] || 0) + 1;
+      const categoryName = fav.categoria || 'Sin categoría';
+      categories[categoryName] = (categories[categoryName] || 0) + 1;
     });
 
-    const mostFavoritedCategory = Object.keys(categories).reduce((a, b) => 
-      categories[a] > categories[b] ? a : b, ''
-    );
+    // Encontrar la categoría más popular
+    let mostFavoritedCategory = 'N/A';
+    if (Object.keys(categories).length > 0) {
+      mostFavoritedCategory = Object.keys(categories).reduce((a, b) => 
+        categories[a] > categories[b] ? a : b
+      );
+    }
+
+    console.log('📊 Estadísticas de favoritos:', {
+      total,
+      categories,
+      mostFavoritedCategory
+    });
 
     return {
       total,
@@ -168,6 +278,27 @@ export const FavoritesProvider = ({ children }) => {
       isEmpty: total === 0
     };
   };
+
+  // 🐛 Función de debugging
+  const debugFavorites = () => {
+    console.log('🐛 DEBUG FAVORITOS:');
+    console.log('- Usuario actual:', user);
+    console.log('- Autenticado:', isAuthenticated);
+    console.log('- Favoritos en estado:', favorites);
+    console.log('- Total favoritos:', favorites.length);
+    console.log('- Loading:', isLoading);
+    
+    // También intentar recargar favoritos
+    if (user?.id) {
+      console.log('🔄 Recargando favoritos del usuario ID:', user.id);
+      loadUserFavorites();
+    }
+  };
+
+  // Exponer función de debug en window para acceso desde consola
+  if (typeof window !== 'undefined') {
+    window.debugFavorites = debugFavorites;
+  }
 
   const value = {
     favorites,
@@ -178,7 +309,9 @@ export const FavoritesProvider = ({ children }) => {
     isFavorite,
     getFavorites,
     clearFavorites,
-    getFavoritesStats
+    getFavoritesStats,
+    loadUserFavorites,
+    debugFavorites
   };
 
   return (

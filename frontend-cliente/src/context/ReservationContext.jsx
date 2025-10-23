@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import reservationService from '../services/reservationService';
 
 const ReservationContext = createContext();
 
@@ -18,24 +19,47 @@ export const ReservationProvider = ({ children }) => {
 
   const RESERVATIONS_KEY = 'user_reservations';
 
-  // Cargar reservas del usuario desde localStorage
+  // Cargar reservas del usuario desde backend
   useEffect(() => {
     if (user) {
-      const savedReservations = localStorage.getItem(`${RESERVATIONS_KEY}_${user.id}`);
-      if (savedReservations) {
-        setReservations(JSON.parse(savedReservations));
-      }
+      loadUserReservations();
     } else {
       setReservations([]);
     }
   }, [user]);
 
-  // Guardar reservas en localStorage cuando cambien
-  const saveReservations = (newReservations) => {
-    if (user) {
-      localStorage.setItem(`${RESERVATIONS_KEY}_${user.id}`, JSON.stringify(newReservations));
-      setReservations(newReservations);
+  // 📋 Cargar reservas del usuario desde el backend
+  const loadUserReservations = async () => {
+    if (!user?.id) return;
+
+    try {
+      setIsLoading(true);
+      const userReservations = await reservationService.getReservationsByUser(user.id);
+      
+      // 🔧 FIX: Parsear fechas del backend a objetos Date para el frontend
+      const reservationsWithParsedDates = userReservations.map(reservation => ({
+        ...reservation,
+        startDate: reservation.fechaInicio ? new Date(reservation.fechaInicio + 'T00:00:00') : null,
+        endDate: reservation.fechaFin ? new Date(reservation.fechaFin + 'T00:00:00') : null,
+        // Mantener campos originales por compatibilidad
+        fechaInicio: reservation.fechaInicio,
+        fechaFin: reservation.fechaFin
+      }));
+      
+      setReservations(reservationsWithParsedDates);
+      console.log('✅ Reservas cargadas desde backend:', reservationsWithParsedDates);
+    } catch (error) {
+      console.error('❌ Error al cargar reservas:', error);
+      setReservations([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+
+  // Guardar reservas (ya no se usa localStorage)
+  const saveReservations = (newReservations) => {
+    setReservations(newReservations);
   };
 
   // Crear nueva reserva
@@ -47,42 +71,27 @@ export const ReservationProvider = ({ children }) => {
     setIsLoading(true);
 
     try {
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const newReservation = {
-        id: Date.now(),
-        userId: user.id,
-        vehicleId: reservationData.vehicleId,
-        vehicleName: reservationData.vehicleName,
-        vehicleImage: reservationData.vehicleImage,
+      // 📤 Preparar datos para el backend
+      const backendData = {
         startDate: reservationData.startDate,
         endDate: reservationData.endDate,
-        pickupLocation: reservationData.pickupLocation,
-        dropoffLocation: reservationData.dropoffLocation,
-        totalDays: reservationData.totalDays,
-        dailyPrice: reservationData.dailyPrice,
-        totalPrice: reservationData.totalPrice,
-        customerInfo: {
-          firstName: reservationData.firstName || user.firstName,
-          lastName: reservationData.lastName || user.lastName,
-          email: reservationData.email || user.email,
-          phone: reservationData.phone || user.phone,
-          driverLicense: reservationData.driverLicense,
-          emergencyContact: reservationData.emergencyContact,
-        },
-        additionalServices: reservationData.additionalServices || [],
-        specialRequests: reservationData.specialRequests || '',
-        status: 'confirmed',
-        createdAt: new Date().toISOString(),
-        confirmationCode: generateConfirmationCode()
+        userId: user.id,
+        productId: reservationData.vehicleId,
+        status: 'PENDIENTE'
       };
 
-      const updatedReservations = [...reservations, newReservation];
-      saveReservations(updatedReservations);
+      console.log('📤 Datos usuario:', user);
+      console.log('📤 Datos reserva recibidos:', reservationData);
+      console.log('📤 Datos formateados para backend:', backendData);
+      const newReservation = await reservationService.createReservation(backendData);
+      
+      // 🔄 Recargar reservas del usuario para tener datos actualizados
+      await loadUserReservations();
 
+      console.log('✅ Reserva creada exitosamente:', newReservation);
       return { success: true, reservation: newReservation };
     } catch (error) {
+      console.error('❌ Error al crear reserva:', error);
       return { success: false, error: error.message };
     } finally {
       setIsLoading(false);
@@ -94,19 +103,17 @@ export const ReservationProvider = ({ children }) => {
     setIsLoading(true);
 
     try {
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 🚫 Cancelar reserva en el backend
+      console.log('🚫 Cancelando reserva:', reservationId);
+      await reservationService.cancelReservation(reservationId);
+      
+      // 🔄 Recargar reservas para tener datos actualizados
+      await loadUserReservations();
 
-      const updatedReservations = reservations.map(reservation => 
-        reservation.id === reservationId 
-          ? { ...reservation, status: 'cancelled', cancelledAt: new Date().toISOString() }
-          : reservation
-      );
-
-      saveReservations(updatedReservations);
-
+      console.log('✅ Reserva cancelada exitosamente');
       return { success: true };
     } catch (error) {
+      console.error('❌ Error al cancelar reserva:', error);
       return { success: false, error: error.message };
     } finally {
       setIsLoading(false);
@@ -114,8 +121,33 @@ export const ReservationProvider = ({ children }) => {
   };
 
   // Obtener reserva por ID
-  const getReservationById = (reservationId) => {
-    return reservations.find(reservation => reservation.id === parseInt(reservationId));
+  const getReservationById = async (reservationId) => {
+    try {
+      // 🔍 Buscar primero en las reservas cargadas
+      const localReservation = reservations.find(reservation => reservation.id === parseInt(reservationId));
+      if (localReservation) {
+        return localReservation;
+      }
+
+      // 📡 Si no está en memoria, consultar al backend
+      console.log('🔍 Consultando reserva en backend:', reservationId);
+      const reservation = await reservationService.getReservationById(reservationId);
+      
+      // 🔧 FIX: Parsear fechas también para reserva individual
+      if (reservation) {
+        return {
+          ...reservation,
+          startDate: reservation.fechaInicio ? new Date(reservation.fechaInicio + 'T00:00:00') : null,
+          endDate: reservation.fechaFin ? new Date(reservation.fechaFin + 'T00:00:00') : null,
+          fechaInicio: reservation.fechaInicio,
+          fechaFin: reservation.fechaFin
+        };
+      }
+      return reservation;
+    } catch (error) {
+      console.error('❌ Error al obtener reserva por ID:', error);
+      return null;
+    }
   };
 
   // Obtener reservas activas (confirmadas y futuras)

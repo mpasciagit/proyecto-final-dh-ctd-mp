@@ -31,14 +31,14 @@ public class ProductoController {
     }
 
     // ----------------- OBTENER POR ID -----------------
-    @PreAuthorize("hasAuthority('PRODUCTO:BUSCAR')")
+    // 🌍 Endpoint público - no requiere autenticación
     @GetMapping("/{id}")
     public ResponseEntity<ProductoDTO> obtenerProductoPorId(@PathVariable Long id) {
         return ResponseEntity.ok(productoService.findById(id));
     }
 
     // ----------------- LISTAR TODOS -----------------
-    @PreAuthorize("hasAuthority('PRODUCTO:LISTAR')")
+    // 🌍 Endpoint público - no requiere autenticación
     @GetMapping
     public ResponseEntity<List<ProductoDTO>> listarTodos() {
         return ResponseEntity.ok(productoService.findAll());
@@ -62,14 +62,14 @@ public class ProductoController {
     }
 
     // ----------------- BUSCAR POR NOMBRE -----------------
-    @PreAuthorize("hasAuthority('PRODUCTO:BUSCAR')")
+    // 🌍 Endpoint público - no requiere autenticación
     @GetMapping("/nombre/{nombre}")
     public ResponseEntity<List<ProductoDTO>> buscarPorNombre(@PathVariable String nombre) {
         return ResponseEntity.ok(productoService.findByNombre(nombre));
     }
 
     // ----------------- BUSCAR POR CATEGORÍA -----------------
-    @PreAuthorize("hasAuthority('PRODUCTO:BUSCAR')")
+    // 🌍 Endpoint público - no requiere autenticación
     @GetMapping("/categoria/{categoriaId}")
     public ResponseEntity<List<ProductoDTO>> buscarPorCategoria(@PathVariable Long categoriaId) {
         return ResponseEntity.ok(productoService.findByCategoria(categoriaId));

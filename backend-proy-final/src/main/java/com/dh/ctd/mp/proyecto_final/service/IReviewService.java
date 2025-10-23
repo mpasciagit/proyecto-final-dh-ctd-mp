@@ -16,4 +16,6 @@ public interface IReviewService {
     List<ReviewDTO> findByProductoId(Long productoId);
 
     List<ReviewDTO> findByUsuarioId(Long usuarioId);
+
+    ReviewDTO update(Long id, ReviewDTO reviewDTO);
 }

@@ -33,5 +33,12 @@ public class Categoria {
     // --- Relaciones ---
     @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Producto> productos = new HashSet<>();
+
+    public Categoria(Long id, String nombre, String descripcion, String urlImagen) {
+        this.id = id;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.urlImagen = urlImagen;
+    }
 }
 

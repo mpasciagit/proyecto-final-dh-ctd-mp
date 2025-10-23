@@ -157,9 +157,14 @@ const MisFavoritos = () => {
                 {/* Contenido de la tarjeta */}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
-                      {product.nombre}
-                    </h3>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                        {product.nombre}
+                      </h3>
+                      <p className="text-sm text-gray-500 capitalize mt-1">
+                        {product.categoria}
+                      </p>
+                    </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-red-600">
                         ${product.precio.toLocaleString()}

@@ -6,40 +6,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useAuth } from '../context/AuthContext';
 import { useReservations } from '../context/ReservationContext';
 import { useReservationNotifications } from '../hooks/useReservationNotifications';
-
-// Mock de productos (deberíamos usar el mismo del contexto de productos)
-const productos = [
-  { 
-    id: 1, 
-    nombre: "Toyota Corolla", 
-    categoria: "sedan", 
-    precio: 45, 
-    pasajeros: 5, 
-    ubicacion: "Buenos Aires",
-    imagen: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 2, 
-    nombre: "Honda Civic", 
-    categoria: "sedan", 
-    precio: 50, 
-    pasajeros: 5, 
-    ubicacion: "Córdoba",
-    imagen: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 5, 
-    nombre: "Toyota RAV4", 
-    categoria: "suv", 
-    precio: 80, 
-    pasajeros: 7, 
-    ubicacion: "Buenos Aires",
-    imagen: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?q=80&w=400",
-    disponible: true 
-  }
-];
+import productService from '../services/productService';
 
 const CreateReservation = () => {
   const { vehicleId } = useParams();
@@ -77,20 +44,53 @@ const CreateReservation = () => {
     { id: 'driver', name: 'Conductor adicional', price: 10, description: 'Licencia para segundo conductor' }
   ];
 
-  // Cargar vehículo y datos iniciales
+  // Cargar vehículo desde backend
   useEffect(() => {
-    const vehicleData = productos.find(p => p.id === parseInt(vehicleId));
-    if (vehicleData) {
-      setVehicle(vehicleData);
-      
-      // Prellenar ubicaciones
-      setFormData(prev => ({
-        ...prev,
-        pickupLocation: vehicleData.ubicacion,
-        dropoffLocation: vehicleData.ubicacion
-      }));
+    const loadVehicle = async () => {
+      try {
+        console.log('🚗 Cargando producto desde backend:', vehicleId);
+        
+        // 🔄 Cargar producto e imágenes en paralelo
+        const [vehicleData, imagenesData] = await Promise.all([
+          productService.getProductById(parseInt(vehicleId)),
+          productService.getProductImages(parseInt(vehicleId))
+        ]);
+        
+        if (vehicleData) {
+          console.log('✅ Producto cargado:', vehicleData);
+          console.log('🖼️ Imágenes cargadas:', imagenesData);
+          
+          // Combinar producto con imágenes
+          const vehicleWithImages = {
+            ...vehicleData,
+            imagenes: imagenesData || [],
+            imagen: imagenesData?.[0]?.url || '/placeholder-car.jpg' // Primera imagen como principal
+          };
+          
+          setVehicle(vehicleWithImages);
+          
+          // Prellenar ubicaciones
+          setFormData(prev => ({
+            ...prev,
+            pickupLocation: vehicleData.ciudad || vehicleData.ubicacion || 'Buenos Aires',
+            dropoffLocation: vehicleData.ciudad || vehicleData.ubicacion || 'Buenos Aires'
+          }));
+        }
+      } catch (error) {
+        console.error('❌ Error al cargar producto:', error);
+        // Redirigir si no se puede cargar el producto
+        navigate('/productos');
+      }
+    };
+
+    if (vehicleId) {
+      loadVehicle();
     }
 
+  }, [vehicleId, navigate]);
+
+  // Prellenar fechas y datos de usuario por separado
+  useEffect(() => {
     // Prellenar fechas si vienen en la URL
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');
@@ -113,7 +113,7 @@ const CreateReservation = () => {
         phone: user.phone || ''
       }));
     }
-  }, [vehicleId, searchParams, user]);
+  }, [searchParams, user]);
 
   // Calcular precio cuando cambien fechas o servicios
   useEffect(() => {
@@ -262,7 +262,7 @@ const CreateReservation = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => step === 1 ? navigate(-1) : prevStep()}
             className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />

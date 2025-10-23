@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DatePicker from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import es from 'date-fns/locale/es';
+registerLocale('es', es);
 import { Calendar, MapPin, Search, Users, Car } from 'lucide-react';
+import { categoryService } from '../services/categoryService';
 
 const SearchSection = () => {
   const navigate = useNavigate();
@@ -13,6 +16,34 @@ const SearchSection = () => {
     vehicleType: '',
     passengers: 1
   });
+
+  const [categorias, setCategorias] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // 🚀 Cargar categorías del backend
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const categoriasData = await categoryService.getAllCategories();
+        setCategorias(categoriasData);
+        console.log('✅ Categorías cargadas desde backend:', categoriasData);
+      } catch (error) {
+        console.error('❌ Error al cargar categorías:', error);
+        console.log('🟡 SEARCHSECTION - USANDO FALLBACK - DATOS MOCKADOS (NO BACKEND)');
+        // Fallback a categorías por defecto si falla el backend
+        setCategorias([
+          { id: 1, nombre: 'Económico [MOCK]' },
+          { id: 2, nombre: 'SUV [MOCK]' },
+          { id: 3, nombre: 'Lujo [MOCK]' },
+          { id: 4, nombre: 'Pickup [MOCK]' }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategorias();
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -33,7 +64,7 @@ const SearchSection = () => {
       location: searchData.location,
       startDate: searchData.startDate.toISOString(),
       endDate: searchData.endDate.toISOString(),
-      vehicleType: searchData.vehicleType,
+      categoria: searchData.vehicleType, // Enviar el ID de la categoría como 'categoria'
       passengers: searchData.passengers.toString()
     });
 
@@ -41,14 +72,13 @@ const SearchSection = () => {
     navigate(`/productos?${params.toString()}`);
   };
 
+  // 🚗 Generar tipos de vehículo dinámicamente desde categorías del backend
   const vehicleTypes = [
     { value: '', label: 'Todos los vehículos' },
-    { value: 'sedan', label: 'Sedán' },
-    { value: 'suv', label: 'SUV' },
-    { value: 'pickup', label: 'Pick-up' },
-    { value: 'hatchback', label: 'Hatchback' },
-    { value: 'coupe', label: 'Coupé' },
-    { value: 'convertible', label: 'Convertible' }
+    ...categorias.map(categoria => ({
+      value: categoria.id, // Usar el ID como value
+      label: categoria.nombre
+    }))
   ];
 
   const locations = [
@@ -126,13 +156,18 @@ const SearchSection = () => {
                 <select
                   value={searchData.vehicleType}
                   onChange={(e) => setSearchData(prev => ({ ...prev, vehicleType: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  disabled={loading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  {vehicleTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
+                  {loading ? (
+                    <option value="">Cargando categorías...</option>
+                  ) : (
+                    vehicleTypes.map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -177,6 +212,7 @@ const SearchSection = () => {
                   showMonthDropdown
                   showYearDropdown
                   dropdownMode="select"
+                  locale="es"
                 />
               </div>
 
@@ -199,6 +235,7 @@ const SearchSection = () => {
                   showMonthDropdown
                   showYearDropdown
                   dropdownMode="select"
+                  locale="es"
                 />
               </div>
             </div>

@@ -113,7 +113,6 @@ const ProductCard = memo(({ product, showAvailability = true }) => {
         <div className="mb-3">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium text-blue-600">{marca}</span>
-            <span className="text-xs text-gray-500 capitalize">{categoria}</span>
           </div>
           <Link 
             to={`/producto/${id}`}
@@ -122,6 +121,9 @@ const ProductCard = memo(({ product, showAvailability = true }) => {
             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
               {nombre}
             </h3>
+            <p className="text-sm text-gray-500 capitalize mt-1">
+              {categoria}
+            </p>
           </Link>
         </div>
 
@@ -137,46 +139,61 @@ const ProductCard = memo(({ product, showAvailability = true }) => {
           </div>
         )}
 
-        {/* Características principales */}
-        <div className="grid grid-cols-2 gap-2 mb-3 text-sm text-gray-600">
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            <span>{pasajeros} pasajeros</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Settings className="w-4 h-4" />
-            <span>{getTransmisionText(transmision)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-base">{getCombustibleIcon(combustible)}</span>
-            <span className="capitalize">{combustible}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <MapPin className="w-4 h-4" />
-            <span className="truncate">{ubicacion}</span>
-          </div>
-        </div>
-
-        {/* Características destacadas */}
-        {caracteristicas.length > 0 && (
-          <div className="mb-3">
-            <div className="flex flex-wrap gap-1">
-              {caracteristicas.slice(0, 3).map((caracteristica, index) => (
-                <span 
-                  key={index}
-                  className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
-                >
-                  {caracteristica}
+        {/* Características del Backend */}
+        {caracteristicas && caracteristicas.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2 mb-3 text-sm text-gray-600">
+            {caracteristicas.slice(0, 4).map((caracteristica, index) => (
+              <div key={caracteristica.id || index} className="flex items-center gap-1">
+                {caracteristica.iconoUrl && (
+                  <img src={caracteristica.iconoUrl} alt="" className="w-4 h-4" />
+                )}
+                {!caracteristica.iconoUrl && (
+                  <Settings className="w-4 h-4" />
+                )}
+                <span title={caracteristica.descripcion}>
+                  {caracteristica.nombre || 'Característica'}
                 </span>
-              ))}
-              {caracteristicas.length > 3 && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
-                  +{caracteristicas.length - 3} más
-                </span>
-              )}
-            </div>
+              </div>
+            ))}
+            {/* Mostrar ubicación si está disponible */}
+            {ubicacion && (
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span className="truncate">{ubicacion}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Fallback para productos sin características del backend
+          <div className="grid grid-cols-2 gap-2 mb-3 text-sm text-gray-600">
+            {pasajeros && (
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                <span>{pasajeros} pasajeros</span>
+              </div>
+            )}
+            {transmision && (
+              <div className="flex items-center gap-1">
+                <Settings className="w-4 h-4" />
+                <span>{getTransmisionText(transmision)}</span>
+              </div>
+            )}
+            {combustible && (
+              <div className="flex items-center gap-1">
+                <span className="text-base">{getCombustibleIcon(combustible)}</span>
+                <span className="capitalize">{combustible}</span>
+              </div>
+            )}
+            {ubicacion && (
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span className="truncate">{ubicacion}</span>
+              </div>
+            )}
           </div>
         )}
+
+
 
         {/* Footer con precio y acción */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">

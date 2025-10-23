@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { Calendar, AlertCircle, CheckCircle, Clock, Users } from 'lucide-react';
@@ -7,7 +8,14 @@ import { useAuth } from '../context/AuthContext';
 
 const AvailabilityCalendar = ({ vehicleId, vehicleName, onDateSelect, initialStartDate, initialEndDate }) => {
   const { checkVehicleAvailability, getReservationHistory, calculateTotalPrice } = useReservations();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Debug: verificar estado de autenticación
+  console.log('🔍 AvailabilityCalendar - Estado auth:', {
+    isAuthenticated,
+    user: user ? { id: user.id, email: user.email } : null,
+    vehicleId
+  });
   
   const [startDate, setStartDate] = useState(initialStartDate || null);
   const [endDate, setEndDate] = useState(initialEndDate || null);
@@ -362,24 +370,24 @@ const AvailabilityCalendar = ({ vehicleId, vehicleName, onDateSelect, initialSta
 
       {/* Botón de reserva */}
       {startDate && endDate && isAvailable && isAuthenticated && (
-        <a
-          href={`/reservar/${vehicleId}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`}
+        <Link
+          to={`/reservar/${vehicleId}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`}
           className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
         >
           Continuar con la reserva
-        </a>
+        </Link>
       )}
 
       {/* Mensaje para usuarios no autenticados */}
       {startDate && endDate && isAvailable && !isAuthenticated && (
         <div className="text-center">
           <p className="text-gray-600 mb-4">Inicia sesión para continuar con la reserva</p>
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="inline-block bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
             Iniciar Sesión
-          </a>
+          </Link>
         </div>
       )}
 

@@ -22,3 +22,13 @@ export const useAuthNotifications = () => {
     notifyError
   };
 };
+
+// Alias para compatibilidad
+export const useNotifications = () => {
+  const { notifyLoginSuccess, notifyLogoutSuccess, notifyAuthError } = useNotification();
+
+  return {
+    showSuccess: notifyLoginSuccess,
+    showError: notifyAuthError
+  };
+};

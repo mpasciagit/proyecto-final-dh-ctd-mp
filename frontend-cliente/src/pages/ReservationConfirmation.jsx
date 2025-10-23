@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Check, Calendar, MapPin, User, Mail, Phone, Download, Share2, ArrowLeft } from 'lucide-react';
 import { useReservations } from '../context/ReservationContext';
 import { useAuth } from '../context/AuthContext';
+import productService from '../services/productService';
 
 const ReservationConfirmation = () => {
   const { reservationId } = useParams();
@@ -12,17 +13,77 @@ const ReservationConfirmation = () => {
   const [reservation, setReservation] = useState(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
+    const loadReservation = async () => {
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
 
-    const reservationData = getReservationById(parseInt(reservationId));
-    if (reservationData) {
-      setReservation(reservationData);
-    } else {
-      navigate('/reservas');
-    }
+      try {
+        const reservationData = await getReservationById(parseInt(reservationId));
+        if (reservationData) {
+          // 🔧 FIX: Obtener datos completos del producto para tener la imagen
+          let productData = null;
+          let productImages = [];
+          if (reservationData.productoId) {
+            try {
+              productData = await productService.getProductById(reservationData.productoId);
+              console.log('🖼️ Datos del producto obtenidos:', productData);
+              
+              // También intentar obtener las imágenes por separado
+              try {
+                productImages = await productService.getProductImages(reservationData.productoId);
+                console.log('📸 Imágenes del producto obtenidas:', productImages);
+              } catch (imageError) {
+                console.error('❌ Error al obtener imágenes del producto:', imageError);
+              }
+            } catch (error) {
+              console.error('❌ Error al obtener datos del producto:', error);
+            }
+          }
+
+          // 🔧 FIX: Crear customerInfo si no existe (reservas del backend)
+          const enhancedReservation = {
+            ...reservationData,
+            customerInfo: reservationData.customerInfo || {
+              firstName: reservationData.firstName || 'Usuario',
+              lastName: reservationData.lastName || '',
+              email: reservationData.email || 'N/A',
+              phone: reservationData.phone || 'N/A',
+              driverLicense: reservationData.driverLicense || 'N/A',
+              emergencyContact: reservationData.emergencyContact || 'N/A'
+            },
+            // 🖼️ Integrar datos del producto (incluida la imagen)
+            vehicleName: productData?.nombre || reservationData.vehicleName || reservationData.nombre || 'Vehículo',
+            vehicleImage: productImages?.[0]?.url || 
+                         productData?.imagenes?.[0]?.url || 
+                         productData?.imagen?.url ||
+                         productData?.imagen ||
+                         reservationData.vehicleImage || 
+                         '/placeholder-car.jpg',
+            dailyPrice: productData?.precio || reservationData.dailyPrice || reservationData.precio || 0,
+            // Asegurar otros campos necesarios
+            totalPrice: reservationData.totalPrice || (reservationData.precio * reservationData.totalDays) || 0,
+            confirmationCode: reservationData.confirmationCode || `CR${reservationData.id}`,
+            createdAt: reservationData.createdAt || reservationData.fechaCreacion || new Date().toISOString(),
+            // 🔧 FIX: Asegurar arrays que el componente espera
+            additionalServices: reservationData.additionalServices || [],
+            specialRequests: reservationData.specialRequests || ''
+          };
+          
+          console.log('🔍 Enhanced reservation final:', enhancedReservation);
+          console.log('🖼️ Vehicle image final:', enhancedReservation.vehicleImage);
+          setReservation(enhancedReservation);
+        } else {
+          navigate('/reservas');
+        }
+      } catch (error) {
+        console.error('Error al cargar reserva:', error);
+        navigate('/reservas');
+      }
+    };
+
+    loadReservation();
   }, [reservationId, getReservationById, isAuthenticated, navigate]);
 
   const downloadConfirmation = () => {
@@ -109,6 +170,13 @@ const ReservationConfirmation = () => {
                     src={reservation.vehicleImage}
                     alt={reservation.vehicleName}
                     className="w-24 h-16 object-cover rounded-lg"
+                    onError={(e) => {
+                      console.log('❌ Error cargando imagen:', reservation.vehicleImage);
+                      e.target.src = '/placeholder-car.jpg';
+                    }}
+                    onLoad={() => {
+                      console.log('✅ Imagen cargada correctamente:', reservation.vehicleImage);
+                    }}
                   />
                   <div>
                     <h4 className="font-semibold text-gray-900">

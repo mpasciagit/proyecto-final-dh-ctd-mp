@@ -1,12 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star, ThumbsUp, CheckCircle, User, MessageSquare, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../hooks/useAuthNotifications';
 
-const ReviewSystem = ({ productId, reviews, stats, onAddReview, canUserReview }) => {
+// Ahora acepta reservaIdParaReview opcional
+const ReviewSystem = ({ productId, reviews, stats, onAddReview, canUserReview, reservaIdParaReview, showReviewForm: showReviewFormProp }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotifications();
-  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(!!showReviewFormProp);
+
+  // Si la prop cambia, sincroniza el estado
+  useEffect(() => {
+    if (typeof showReviewFormProp !== 'undefined') {
+      setShowReviewForm(!!showReviewFormProp);
+    }
+  }, [showReviewFormProp]);
   const [sortBy, setSortBy] = useState('newest'); // newest, oldest, highest, lowest, helpful
   const [filterBy, setFilterBy] = useState('all'); // all, verified, 5, 4, 3, 2, 1
 
@@ -59,8 +67,10 @@ const ReviewSystem = ({ productId, reviews, stats, onAddReview, canUserReview })
 
     // Aplicar filtros
     if (filterBy !== 'all') {
+      // Filtro por verified deshabilitado - el backend no soporta este campo
       if (filterBy === 'verified') {
-        filteredReviews = filteredReviews.filter(review => review.verified);
+        // No filtrar por verified ya que el backend no tiene este campo
+        filteredReviews = filteredReviews; // Mostrar todas
       } else if (['5', '4', '3', '2', '1'].includes(filterBy)) {
         filteredReviews = filteredReviews.filter(review => review.rating === parseInt(filterBy));
       }
@@ -78,7 +88,8 @@ const ReviewSystem = ({ productId, reviews, stats, onAddReview, canUserReview })
         case 'lowest':
           return a.rating - b.rating;
         case 'helpful':
-          return b.helpful - a.helpful;
+          // Ordenamiento por helpful deshabilitado - el backend no soporta este campo
+          return 0; // No cambiar orden
         default:
           return 0;
       }
@@ -88,6 +99,19 @@ const ReviewSystem = ({ productId, reviews, stats, onAddReview, canUserReview })
   };
 
   const filteredReviews = getFilteredAndSortedReviews();
+
+  // Si showReviewForm está activo, solo muestra el modal
+  if (showReviewForm) {
+    return (
+      <ReviewForm
+        productId={productId}
+        onSubmit={onAddReview}
+        onCancel={() => setShowReviewForm(false)}
+        user={user}
+        reservaIdParaReview={reservaIdParaReview}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -130,7 +154,7 @@ const ReviewSystem = ({ productId, reviews, stats, onAddReview, canUserReview })
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             {[5, 4, 3, 2, 1].map(rating => {
-              const count = stats.distribution[rating];
+              const count = stats.distribution?.[rating] || 0;
               const percentage = stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0;
               
               return (
@@ -384,6 +408,10 @@ const ReviewForm = ({ productId, onSubmit, onCancel, user }) => {
         photos: formData.photos
       };
 
+      // Si se pasa reservaIdParaReview desde el padre, incluirlo
+      if (typeof reservaIdParaReview !== 'undefined' && reservaIdParaReview !== null) {
+        reviewData.reservaId = reservaIdParaReview;
+      }
       await onSubmit(reviewData);
       showSuccess('¡Reseña enviada exitosamente!');
       onCancel();

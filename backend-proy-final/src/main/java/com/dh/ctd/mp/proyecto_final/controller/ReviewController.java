@@ -29,7 +29,7 @@ public class ReviewController {
     }
 
     // ----------------- OBTENER POR ID -----------------
-    @PreAuthorize("hasAuthority('REVIEW:BUSCAR')")
+    // 🌎 Endpoint público – no requiere autenticación
     @GetMapping("/{id}")
     public ResponseEntity<ReviewDTO> getById(@PathVariable Long id) {
         ReviewDTO review = reviewService.findById(id);
@@ -37,7 +37,7 @@ public class ReviewController {
     }
 
     // ----------------- LISTAR TODAS -----------------
-    @PreAuthorize("hasAuthority('REVIEW:LISTAR')")
+    // 🌎 Endpoint público – no requiere autenticación
     @GetMapping
     public ResponseEntity<List<ReviewDTO>> getAll() {
         return ResponseEntity.ok(reviewService.findAll());
@@ -52,16 +52,25 @@ public class ReviewController {
     }
 
     // ----------------- REVIEWS POR PRODUCTO -----------------
-    @PreAuthorize("hasAuthority('REVIEW:BUSCAR')")
+    // 🌎 Endpoint público – no requiere autenticación
     @GetMapping("/producto/{productoId}")
     public ResponseEntity<List<ReviewDTO>> getByProductoId(@PathVariable Long productoId) {
         return ResponseEntity.ok(reviewService.findByProductoId(productoId));
     }
 
     // ----------------- REVIEWS POR USUARIO -----------------
-    @PreAuthorize("hasAuthority('REVIEW:LISTAR')")
+    // 🌎 Endpoint público – no requiere autenticación
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<ReviewDTO>> getByUsuarioId(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(reviewService.findByUsuarioId(usuarioId));
+    }
+
+    // ----------------- ACTUALIZAR -----------------
+    // 🔒 Requiere permiso REVIEW:MODIFICAR
+    @PreAuthorize("hasAuthority('REVIEW:MODIFICAR')")
+    @PutMapping("/{id}")
+    public ResponseEntity<ReviewDTO> update(@PathVariable Long id, @RequestBody ReviewDTO reviewDTO) {
+        ReviewDTO updated = reviewService.update(id, reviewDTO);
+        return ResponseEntity.ok(updated);
     }
 }

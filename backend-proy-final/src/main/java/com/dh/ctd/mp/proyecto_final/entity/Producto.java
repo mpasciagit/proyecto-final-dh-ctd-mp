@@ -60,5 +60,14 @@ public class Producto {
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProductoCaracteristica> productoCaracteristicas = new HashSet<>();
 
+    public Producto(Long id, String nombre, String descripcion, Double precio, Boolean reservable, Integer cantidadTotal, Categoria categoria) {
+        this.id = id;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.precio = precio;
+        this.reservable = reservable;
+        this.cantidadTotal = cantidadTotal;
+        this.categoria = categoria;
+    }
 }
 

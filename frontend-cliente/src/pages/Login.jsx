@@ -111,14 +111,7 @@ const Login = () => {
             </div>
           )}
 
-          {/* Usuarios demo */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm font-semibold text-blue-800 mb-2">Usuarios demo:</p>
-            <div className="space-y-1 text-xs text-blue-700">
-              <p><strong>Admin:</strong> admin@carrent.com / admin123</p>
-              <p><strong>Usuario:</strong> user@example.com / user123</p>
-            </div>
-          </div>
+
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}

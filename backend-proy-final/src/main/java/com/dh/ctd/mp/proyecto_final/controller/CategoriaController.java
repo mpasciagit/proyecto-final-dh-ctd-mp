@@ -28,14 +28,14 @@ public class CategoriaController {
     }
 
     // 🔹 Buscar por ID
-    @PreAuthorize("hasAuthority('CATEGORIA:BUSCAR')")
+    // 🌍 Endpoint público - no requiere autenticación
     @GetMapping("/{id}")
     public ResponseEntity<CategoriaDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(categoriaService.findById(id));
     }
 
     // 🔹 Listar todas
-    @PreAuthorize("hasAuthority('CATEGORIA:LISTAR')")
+    // 🌍 Endpoint público - no requiere autenticación
     @GetMapping
     public ResponseEntity<List<CategoriaDTO>> listarTodas() {
         return ResponseEntity.ok(categoriaService.findAll());

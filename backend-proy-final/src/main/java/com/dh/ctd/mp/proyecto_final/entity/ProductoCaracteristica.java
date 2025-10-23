@@ -25,7 +25,7 @@ public class ProductoCaracteristica {
     @JoinColumn(name = "caracteristica_id", nullable = false)
     private Caracteristica caracteristica;
 
-    // Opcional: valor específico de la característica en este producto
+    // valor específico de la característica en este producto
     private String valor;
 }
 

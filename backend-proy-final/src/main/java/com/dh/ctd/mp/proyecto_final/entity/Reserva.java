@@ -7,7 +7,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reservas")
+@Table(
+    name = "reservas",
+    indexes = {
+        @Index(name = "idx_usuario_producto_estado", columnList = "usuario_id, producto_id, estado"),
+        @Index(name = "idx_usuario_producto", columnList = "usuario_id, producto_id")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,23 +25,19 @@ public class Reserva {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Fechas de reserva
     @Column(nullable = false)
     private LocalDate fechaInicio;
 
     @Column(nullable = false)
     private LocalDate fechaFin;
 
-    // Fecha de creación de la reserva
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion = LocalDateTime.now();
 
-    // Estado de la reserva (ej: PENDIENTE, CONFIRMADA, CANCELADA)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoReserva estado;
 
-    // --- Relaciones ---
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
@@ -43,4 +45,7 @@ public class Reserva {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
+
+    @OneToOne(mappedBy = "reserva", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Review review;
 }

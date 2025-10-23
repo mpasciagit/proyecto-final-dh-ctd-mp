@@ -24,14 +24,14 @@ public class CaracteristicaController {
     }
 
     // 🔹 Buscar por ID
-    @PreAuthorize("hasAuthority('CARACTERISTICA:BUSCAR')")
+    // 🌎 Endpoint público – no requiere autenticación
     @GetMapping("/{id}")
     public ResponseEntity<CaracteristicaDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(caracteristicaService.findById(id));
     }
 
     // 🔹 Listar todas
-    @PreAuthorize("hasAuthority('CARACTERISTICA:LISTAR')")
+    // 🌎 Endpoint público – no requiere autenticación
     @GetMapping
     public ResponseEntity<List<CaracteristicaDTO>> listarTodas() {
         return ResponseEntity.ok(caracteristicaService.findAll());

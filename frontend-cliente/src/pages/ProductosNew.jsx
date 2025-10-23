@@ -1,12 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { productos, precioRango, pasajerosRango } from "../utils/productData";
+// import { productos, precioRango, pasajerosRango } from "../utils/productData";
+import { productService, categoryService } from "../services";
 import { AdvancedFilters, SortingControls, ProductCard } from "../components";
+import { LoadingSpinner, ErrorMessage, ProductsLoading } from "../components/LoadingComponents";
 
 const ITEMS_PER_PAGE = 9;
 
 const Productos = () => {
   const [searchParams] = useSearchParams();
+  
+  // Estados para datos del backend
+  const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // Estados para filtros
   const [filters, setFilters] = useState({
@@ -15,10 +23,10 @@ const Productos = () => {
     ubicacion: [],
     transmision: [],
     combustible: [],
-    precioMin: precioRango.min,
-    precioMax: precioRango.max,
-    pasajerosMin: pasajerosRango.min,
-    pasajerosMax: pasajerosRango.max,
+    precioMin: 0,
+    precioMax: 1000,
+    pasajerosMin: 1,
+    pasajerosMax: 8,
     rating: 0,
     caracteristicas: [],
     soloDisponibles: false,
@@ -30,6 +38,46 @@ const Productos = () => {
   const [sortBy, setSortBy] = useState('precio');
   const [sortOrder, setSortOrder] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Cargar datos del backend
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Cargar productos y categorías en paralelo
+        const [productosData, categoriasData] = await Promise.all([
+          productService.getAllProducts(),
+          categoryService.getAllCategories()
+        ]);
+        
+        setProductos(productosData);
+        setCategorias(categoriasData);
+        
+        // Actualizar rangos de precios dinámicamente
+        if (productosData.length > 0) {
+          const precios = productosData.map(p => p.precio || 0);
+          const minPrecio = Math.min(...precios);
+          const maxPrecio = Math.max(...precios);
+          
+          setFilters(prev => ({
+            ...prev,
+            precioMin: minPrecio,
+            precioMax: maxPrecio
+          }));
+        }
+        
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        setError('Error al cargar los productos. Intenta recargar la página.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   // Inicializar filtros desde URL
   useEffect(() => {
@@ -219,16 +267,29 @@ const Productos = () => {
         </p>
       </div>
 
-      {/* Filtros avanzados */}
-      <AdvancedFilters
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        onClearFilters={handleClearFilters}
-        resultCount={sortedProducts.length}
-      />
+      {/* Estados de loading y error */}
+      {loading && <ProductsLoading />}
+      
+      {error && (
+        <ErrorMessage 
+          message={error} 
+          onRetry={() => window.location.reload()} 
+        />
+      )}
 
-      {/* Controles de ordenamiento */}
-      <SortingControls
+      {/* Contenido principal - solo mostrar si no hay loading ni error */}
+      {!loading && !error && (
+        <>
+          {/* Filtros avanzados */}
+          <AdvancedFilters
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onClearFilters={handleClearFilters}
+            resultCount={sortedProducts.length}
+          />
+
+          {/* Controles de ordenamiento */}
+          <SortingControls
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
@@ -327,6 +388,8 @@ const Productos = () => {
             </button>
           </nav>
         </div>
+      )}
+        </>
       )}
     </section>
   );

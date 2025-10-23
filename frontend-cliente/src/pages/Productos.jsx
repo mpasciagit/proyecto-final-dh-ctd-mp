@@ -1,117 +1,19 @@
 import { useSearchParams, Link } from "react-router-dom";
-import { Calendar, MapPin, Car, Users, Filter, X } from "lucide-react";
+import { Calendar, MapPin, Car, Users, Filter, X, Settings, Briefcase } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FavoriteButton } from "../components";
 import { ProductListSkeleton } from "../components/LoadingSkeletons";
+import ProductoCaracteristicas from "../components/ProductoCaracteristicas";
 import { useDebouncedValue } from "../utils/optimizationUtils";
-
-// Mock de productos expandido con más detalles
-const productos = [
-  { 
-    id: 1, 
-    nombre: "Toyota Corolla", 
-    categoria: "sedan", 
-    precio: 45, 
-    pasajeros: 5, 
-    ubicacion: "Buenos Aires",
-    imagen: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 2, 
-    nombre: "Honda Civic", 
-    categoria: "sedan", 
-    precio: 50, 
-    pasajeros: 5, 
-    ubicacion: "Córdoba",
-    imagen: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 3, 
-    nombre: "Toyota Camry", 
-    categoria: "sedan", 
-    precio: 65, 
-    pasajeros: 5, 
-    ubicacion: "Buenos Aires",
-    imagen: "https://images.unsplash.com/photo-1616788874313-95c6de7d91d4?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 4, 
-    nombre: "Honda Accord", 
-    categoria: "sedan", 
-    precio: 70, 
-    pasajeros: 5, 
-    ubicacion: "Rosario",
-    imagen: "https://images.unsplash.com/photo-1616788874313-95c6de7d91d4?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 5, 
-    nombre: "Toyota RAV4", 
-    categoria: "suv", 
-    precio: 80, 
-    pasajeros: 7, 
-    ubicacion: "Buenos Aires",
-    imagen: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 6, 
-    nombre: "Ford Explorer", 
-    categoria: "suv", 
-    precio: 90, 
-    pasajeros: 8, 
-    ubicacion: "Mendoza",
-    imagen: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 7, 
-    nombre: "Ford F-150", 
-    categoria: "pickup", 
-    precio: 95, 
-    pasajeros: 5, 
-    ubicacion: "Salta",
-    imagen: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 8, 
-    nombre: "Volkswagen Gol", 
-    categoria: "hatchback", 
-    precio: 35, 
-    pasajeros: 5, 
-    ubicacion: "La Plata",
-    imagen: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 9, 
-    nombre: "BMW Z4", 
-    categoria: "convertible", 
-    precio: 150, 
-    pasajeros: 2, 
-    ubicacion: "Mar del Plata",
-    imagen: "https://images.unsplash.com/photo-1603384696015-871af6a62b49?q=80&w=400",
-    disponible: true 
-  },
-  { 
-    id: 10, 
-    nombre: "Mercedes-Benz C-Class", 
-    categoria: "coupe", 
-    precio: 120, 
-    pasajeros: 4, 
-    ubicacion: "Bariloche",
-    imagen: "https://images.unsplash.com/photo-1603384696015-871af6a62b49?q=80&w=400",
-    disponible: true 
-  }
-];
+import productService from "../services/productService";
+import categoryService from "../services/categoryService";
 
 export default function Productos() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [categorias, setCategorias] = useState([]);
   
   // Extraer parámetros de búsqueda
   const location = searchParams.get("location");
@@ -121,33 +23,124 @@ export default function Productos() {
   const endDate = searchParams.get("endDate");
   const categoria = searchParams.get("categoria"); // Para compatibilidad con navegación por categorías
 
-  // Simular carga de datos
+  // Cargar datos del backend
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [location, vehicleType, passengers, startDate, endDate, categoria]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // 📂 Cargar categorías primero (siempre necesario)
+        const categoriasData = await categoryService.getAllCategories();
+        setCategorias(categoriasData);
+        
+        let productosData = [];
+        
+        // 🎯 Si hay filtro por categoría, usar endpoint específico
+        if (categoria) {
+          console.log('🔍 Filtrando por categoría:', categoria);
+          // Si categoria es un número (ID), usarlo directamente
+          const categoriaId = Number(categoria);
+          if (!isNaN(categoriaId)) {
+            productosData = await productService.getProductsByCategory(categoriaId);
+            console.log('✅ Productos de categoría cargados:', productosData);
+          } else {
+            // Buscar el ID de la categoría por nombre (compatibilidad)
+            const categoriaObj = categoriasData.find(c => 
+              c.nombre.toLowerCase() === categoria.toLowerCase()
+            );
+            if (categoriaObj) {
+              productosData = await productService.getProductsByCategory(categoriaObj.id);
+              console.log('✅ Productos de categoría cargados:', productosData);
+            } else {
+              console.warn('❌ Categoría no encontrada:', categoria);
+              productosData = [];
+            }
+          }
+        } else {
+          // 📋 Si no hay filtro por categoría, cargar todos los productos
+          console.log('📋 Cargando todos los productos...');
+          productosData = await productService.getAllProducts();
+        }
+        
+        // 🖼️ Cargar imágenes para cada producto
+        console.log('🖼️ Cargando imágenes para productos...');
+        const productosConImagenes = await Promise.all(
+          productosData.map(async (producto) => {
+            try {
+              const imagenes = await productService.getProductImages(producto.id);
+              return {
+                ...producto,
+                imagenes: imagenes || []
+              };
+            } catch (error) {
+              console.error(`Error al cargar imágenes del producto ${producto.id}:`, error);
+              return {
+                ...producto,
+                imagenes: []
+              };
+            }
+          })
+        );
+
+        setProductos(productosConImagenes);
+        
+        // Debug: mostrar estructura de datos
+        console.log('🚗 Productos cargados con imágenes:', productosConImagenes);
+        console.log('🚗 Primer producto estructura:', productosConImagenes[0]);
+        console.log('�️ Imágenes del primer producto:', productosConImagenes[0]?.imagenes);
+        console.log('📂 Categorías disponibles:', categoriasData);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Error al cargar los productos. Por favor, intenta nuevamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [categoria]); // 🔄 Recargar cuando cambie el filtro de categoría
 
   // Aplicar filtros
   let productosFiltrados = productos;
 
+  console.log('🔍 Parámetros de filtrado recibidos:');
+  console.log('  - categoria:', categoria);
+  console.log('  - vehicleType:', vehicleType);
+  console.log('  - location:', location);
+  console.log('  - passengers:', passengers);
+
+  // 📝 NOTA: Si hay filtro por categoría, los productos ya vienen filtrados del backend
+  // Solo aplicamos filtros adicionales (ubicación, pasajeros, etc.)
+
   if (location) {
-    productosFiltrados = productosFiltrados.filter(p => p.ubicacion === location);
+    productosFiltrados = productosFiltrados.filter(p => 
+      p.ciudad?.toLowerCase().includes(location.toLowerCase()) ||
+      p.ubicacion?.toLowerCase().includes(location.toLowerCase())
+    );
+    console.log('🏙️ Después de filtrar por ubicación:', productosFiltrados.length);
   }
 
   if (vehicleType) {
-    productosFiltrados = productosFiltrados.filter(p => p.categoria === vehicleType);
+    console.log('🚗 Filtrando por vehicleType:', vehicleType);
+    console.log('🚗 Productos antes del filtro:', productosFiltrados.length);
+    productosFiltrados = productosFiltrados.filter(p => {
+      const categoriaComparar = p.categoria?.nombre?.toLowerCase() || p.categoria?.toLowerCase();
+      console.log(`  - Producto "${p.nombre}" tiene categoría: "${categoriaComparar}" vs "${vehicleType.toLowerCase()}"`);
+      return categoriaComparar === vehicleType.toLowerCase();
+    });
+    console.log('🚗 Después de filtrar por vehicleType:', productosFiltrados.length);
   }
 
+  // 📂 No filtrar por categoría aquí si ya se filtró en el backend
   if (categoria) {
-    productosFiltrados = productosFiltrados.filter(p => p.categoria === categoria);
+    console.log('📂 ✅ Productos ya filtrados por categoría en backend');
   }
 
   if (passengers > 0) {
-    productosFiltrados = productosFiltrados.filter(p => p.pasajeros >= passengers);
+    productosFiltrados = productosFiltrados.filter(p => 
+      (p.pasajeros || p.capacidadPasajeros) >= passengers
+    );
   }
 
   // Función para limpiar filtros
@@ -237,6 +230,19 @@ export default function Productos() {
         )}
       </div>
 
+      {/* Manejo de errores */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-center">
+          <p className="text-red-800">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       {/* Grid de productos */}
       {loading ? (
         <ProductListSkeleton count={8} />
@@ -258,38 +264,45 @@ export default function Productos() {
             
             {/* Link que envuelve la imagen y contenido principal */}
             <Link to={`/producto/${producto.id}`} className="block">
-              <img
-                src={producto.imagen}
-                alt={producto.nombre}
-                className="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={(e) => {
-                  e.target.src = '/api/placeholder/400/300';
-                }}
-              />
+              <div className="h-48 w-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                {producto.imagenes?.[0]?.url || producto.imagen ? (
+                  <img
+                    src={producto.imagenes[0].url || producto.imagen}
+                    alt={producto.nombre}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onLoad={() => {
+                      console.log(`✅ Backend imagen producto OK: ${producto.nombre}`);
+                    }}
+                    onError={(e) => {
+                      console.error(`❌ BACKEND FALLO - Imagen producto: ${producto.nombre}`);
+                      e.target.style.backgroundColor = '#fee2e2';
+                      e.target.style.border = '2px solid #dc2626';
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full w-full bg-gray-100 text-gray-500 border-2 border-gray-300">
+                    <div className="text-center">
+                      <p className="text-2xl">📷</p>
+                      <p className="text-xs">Sin imagen</p>
+                      <p className="text-xs">en backend</p>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="p-4">
                 <h3 className="text-lg font-semibold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
                   {producto.nombre}
                 </h3>
+                <p className="text-sm text-gray-500 capitalize mb-3">
+                  {producto.categoriaNombre || producto.categoria || 'Sin categoría'}
+                </p>
                 
-                {/* Información del vehículo */}
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Car className="w-4 h-4" />
-                    {getVehicleTypeName(producto.categoria)}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Users className="w-4 h-4" />
-                    {producto.pasajeros} pasajeros
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin className="w-4 h-4" />
-                    {producto.ubicacion}
-                  </div>
-                </div>
+                {/* Características reales del Backend */}
+                <ProductoCaracteristicas productoId={producto.id} />
                 
                 <div className="flex justify-between items-center">
                   <span className="text-xl font-bold text-blue-600">
-                    ${producto.precio}/día
+                    ${producto.precio || producto.precioBase || 0}/día
                   </span>
                   <span className="text-sm text-blue-600 group-hover:underline">
                     Ver detalles →

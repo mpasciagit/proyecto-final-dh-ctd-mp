@@ -16,4 +16,5 @@ public class ReviewDTO {
     private LocalDateTime fechaCreacion;
     private Long usuarioId;
     private Long productoId;
+    private Long reservaId;
 }

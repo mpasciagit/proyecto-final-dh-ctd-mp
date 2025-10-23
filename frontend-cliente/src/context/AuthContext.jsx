@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import authService from '../services/authService.js';
 
 const AuthContext = createContext();
 
@@ -14,69 +15,56 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simular usuarios mock en localStorage
-  const MOCK_USERS_KEY = 'mock_users';
-  const CURRENT_USER_KEY = 'current_user';
-
-  // Inicializar usuarios mock si no existen
+  // Verificar si hay un usuario logueado al inicializar
   useEffect(() => {
-    const existingUsers = localStorage.getItem(MOCK_USERS_KEY);
-    if (!existingUsers) {
-      const mockUsers = [
-        {
-          id: 1,
-          email: 'admin@carrent.com',
-          password: 'admin123',
-          firstName: 'Admin',
-          lastName: 'User',
-          phone: '+1234567890',
-          role: 'admin'
-        },
-        {
-          id: 2,
-          email: 'user@example.com',
-          password: 'user123',
-          firstName: 'Juan',
-          lastName: 'Pérez',
-          phone: '+0987654321',
-          role: 'user'
+    const initializeAuth = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Verificar si hay token guardado
+        if (authService.isAuthenticated()) {
+          const currentUser = authService.getCurrentUser();
+          
+          // Verificar si el token es válido
+          const isValidToken = await authService.verifyToken();
+          
+          if (isValidToken && currentUser) {
+            setUser(currentUser);
+          } else {
+            // Token inválido, limpiar datos
+            authService.logout();
+            setUser(null);
+          }
         }
-      ];
-      localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(mockUsers));
-    }
+      } catch (error) {
+        console.error('Error al inicializar autenticación:', error);
+        authService.logout();
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Verificar si hay un usuario logueado
-    const currentUser = localStorage.getItem(CURRENT_USER_KEY);
-    if (currentUser) {
-      setUser(JSON.parse(currentUser));
-    }
-    
-    setIsLoading(false);
+    initializeAuth();
   }, []);
 
   const login = async (email, password) => {
     setIsLoading(true);
     
     try {
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await authService.login(email, password);
       
-      const users = JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '[]');
-      const user = users.find(u => u.email === email && u.password === password);
+      // El authService ya guarda el token y usuario en localStorage
+      const currentUser = authService.getCurrentUser();
+      setUser(currentUser);
       
-      if (!user) {
-        throw new Error('Credenciales inválidas');
-      }
-
-      // Remover password del objeto usuario
-      const { password: _, ...userWithoutPassword } = user;
-      
-      setUser(userWithoutPassword);
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-      
-      return { success: true, user: userWithoutPassword };
+      return { success: true, user: currentUser };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Error en login:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Error al iniciar sesión' 
+      };
     } finally {
       setIsLoading(false);
     }
@@ -86,78 +74,88 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     
     try {
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const users = JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '[]');
-      
-      // Verificar si el email ya existe
-      const existingUser = users.find(u => u.email === userData.email);
-      if (existingUser) {
-        throw new Error('El email ya está registrado');
-      }
-      
-      // Crear nuevo usuario
-      const newUser = {
-        id: Date.now(),
-        ...userData,
-        role: 'user'
+      // Formatear datos para el backend
+      const registerData = {
+        nombre: userData.firstName,
+        apellido: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+        rol: 'USER' // Rol por defecto para clientes
       };
       
-      users.push(newUser);
-      localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+      const response = await authService.register(registerData);
       
-      // Auto login después del registro
-      const { password: _, ...userWithoutPassword } = newUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
+      // El authService ya guarda el token y usuario en localStorage
+      const currentUser = authService.getCurrentUser();
+      setUser(currentUser);
       
-      return { success: true, user: userWithoutPassword };
+      return { success: true, user: currentUser };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Error en registro:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Error al registrar usuario' 
+      };
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = () => {
+    authService.logout();
     setUser(null);
-    localStorage.removeItem(CURRENT_USER_KEY);
   };
 
   const updateProfile = async (updatedData) => {
     setIsLoading(true);
     
     try {
+      // Por ahora mantener funcionalidad local hasta que tengamos endpoint de perfil
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('Usuario no autenticado');
+      }
+      
       // Simular delay de API
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const users = JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '[]');
-      const userIndex = users.findIndex(u => u.id === user.id);
+      // Actualizar datos localmente
+      const updatedUser = { ...currentUser, ...updatedData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
       
-      if (userIndex === -1) {
-        throw new Error('Usuario no encontrado');
-      }
-      
-      // Actualizar usuario
-      const updatedUser = { ...users[userIndex], ...updatedData };
-      users[userIndex] = updatedUser;
-      
-      localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
-      
-      const { password: _, ...userWithoutPassword } = updatedUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-      
-      return { success: true, user: userWithoutPassword };
+      return { success: true, user: updatedUser };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Error al actualizar perfil:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Error al actualizar perfil' 
+      };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isAuthenticated = !!user;
+  // Función para cambiar contraseña usando el backend
+  const changePassword = async (currentPassword, newPassword) => {
+    setIsLoading(true);
+    
+    try {
+      await authService.changePassword(currentPassword, newPassword);
+      return { success: true, message: 'Contraseña cambiada exitosamente' };
+    } catch (error) {
+      console.error('Error al cambiar contraseña:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Error al cambiar contraseña' 
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 🔐 Verificar autenticación combinando user y token
+  const isAuthenticated = !!user && authService.isAuthenticated();
   const isAdmin = user?.role === 'admin';
 
   const value = {
@@ -168,7 +166,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    updateProfile
+    updateProfile,
+    changePassword
   };
 
   return (

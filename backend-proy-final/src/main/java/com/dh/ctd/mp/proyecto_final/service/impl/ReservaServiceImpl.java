@@ -96,8 +96,11 @@ public class ReservaServiceImpl implements IReservaService {
 
     @Override
     public void delete(Long id) {
-        if (!reservaRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Reserva no encontrada con id: " + id);
+        Reserva reserva = reservaRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + id));
+        if (reserva.getReview() != null) {
+            reserva.setReview(null);
+            reservaRepository.save(reserva);
         }
         reservaRepository.deleteById(id);
     }

@@ -34,14 +34,27 @@ public class SecurityConfig {
 
                 // 🔐 Control de acceso a endpoints
                 .authorizeHttpRequests(auth -> auth
-                        // 🧩 Endpoints públicos: Swagger, H2 y Auth
+                        // 🧩 Endpoints públicos: Swagger, H2, Auth y Productos (solo lectura)
                         .requestMatchers(
                                 "/h2-console/**",
                                 "/api/auth/**",
+                                "/api/productos",
+                                "/api/productos/{id}",
+                                "/api/productos/categoria/**",
+                                "/api/categorias",
+                                "/api/imagenes/producto/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/api/caracteristicas",
+                                "/api/caracteristicas/{id}",
+                                "/api/producto-caracteristicas",
+                                "/api/producto-caracteristicas/{id}",
+                                "/api/reviews/{id}",
+                                "/api/reviews",
+                                "/api/reviews/producto/{productoId}",
+                                "/api/reviews/usuario/{usuarioId}"
                         ).permitAll()
                         // 🔒 El resto requiere autenticación con JWT
                         .anyRequest().authenticated()
@@ -73,7 +86,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

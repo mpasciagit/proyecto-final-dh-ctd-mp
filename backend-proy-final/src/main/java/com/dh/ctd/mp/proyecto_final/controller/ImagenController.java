@@ -50,7 +50,7 @@ public class ImagenController {
     }
 
     // 🔹 Listar imágenes por producto
-    @PreAuthorize("hasAuthority('IMAGEN:LISTAR')")
+    // 🌍 Endpoint público - no requiere autenticación
     @GetMapping("/producto/{productoId}")
     public ResponseEntity<List<ImagenDTO>> listarPorProducto(@PathVariable Long productoId) {
         return ResponseEntity.ok(imagenService.findByProductoId(productoId));

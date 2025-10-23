@@ -32,4 +32,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     // 🔹 Verificación de regla de negocio: producto reservado en un rango de fechas
     boolean existsByProductoIdAndFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
             Long productoId, LocalDate fechaFin, LocalDate fechaInicio);
+
+    // 🔹 Nuevo método: verifica si el usuario tuvo una reserva FINALIZADA de un producto
+    boolean existsByUsuarioIdAndProductoIdAndEstado(Long usuarioId, Long productoId, EstadoReserva estado);
 }
