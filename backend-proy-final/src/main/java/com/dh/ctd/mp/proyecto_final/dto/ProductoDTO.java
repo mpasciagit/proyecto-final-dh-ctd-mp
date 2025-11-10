@@ -22,5 +22,6 @@ public class ProductoDTO {
     private Long categoriaId;
     private String categoriaNombre;
 
-    private List<CaracteristicaDTO> caracteristicas; // Lista de características asociadas
+    private List<CaracteristicaDTO> caracteristicas;
+    private List<ImagenDTO> imagenes;
 }

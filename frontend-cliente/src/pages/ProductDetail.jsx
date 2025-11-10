@@ -1,406 +1,611 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { 
-  ArrowLeft, 
-  Share2, 
-  MapPin, 
-  Users, 
-  Calendar, 
-  Fuel, 
-  Settings, 
-  CheckCircle,
-  Star,
-  Camera,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react";
-import AvailabilityCalendar from "../components/AvailabilityCalendar";
+// 📂 src/pages/ProductDetail.jsx
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchProductDetail,
+  clearProductDetail,
+} from "../redux/slices/productDetailSlice";
 import ProductoCaracteristicas from "../components/ProductoCaracteristicas";
 import { FavoriteButton, ReviewSystem } from "../components";
-import { productService } from "../services/productService";
+import { reservationSteps } from "../config/steps";
+import reservationService from "../services/reservationService";
 import reviewService from "../services/reviewService";
-import { useProductReviews } from "../hooks/useProductReviews";
-import { useUserReservasFinalizadasSinReview } from "../hooks/useUserReservasFinalizadasSinReview";
 import { useAuth } from "../context/AuthContext";
+import StepProgressBar from "../components/StepProgressBar";
+import ShareProductModal from "../components/ShareProductModal";
+import { Share2 } from "lucide-react";
+import RangeCalendarModal from "../components/RangeCalendarModal";
+import {
+  useParams,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
+import {
+  setPickupLocation,
+  setDropoffLocation,
+  setDates,
+} from "../redux/slices/reservationSlice";
+import { locations } from "../utils/locations";
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
   const { user } = useAuth();
-  const [selectedDates, setSelectedDates] = useState(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  // El hook ahora determina si el usuario puede dejar review y cuál reserva usar
-  const [reservaIdParaReview, setReservaIdParaReview] = useState(null);
-  
-  // Estados para datos del backend
-  const [producto, setProducto] = useState(null);
-  const [imagenes, setImagenes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Hook para reviews del backend
-  const { reviews, stats: reviewStats, loading: reviewsLoading, refetch: refetchReviews } = useProductReviews(producto?.id);
-  
-  // Debug temporal - verificar datos de reviews
-  useEffect(() => {
-    if (reviews && reviews.length > 0) {
-      console.log('🔍 Reviews cargadas del backend:', reviews);
-      console.log('📊 Stats calculadas:', reviewStats);
-    }
-  }, [reviews, reviewStats]);
+  // ¿viene con ?modo=exploracion o volvió del login con estado?
+  const [searchParams] = useSearchParams();
+  const modoExploracion =
+    searchParams.get("modo") === "exploracion" ||
+    location.state?.modoExploracion;
 
-  // Cargar producto e imágenes del backend
-  useEffect(() => {
-    const fetchProductoEImagenes = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Cargar producto y sus imágenes en paralelo
-        const [productData, imagenesData] = await Promise.all([
-          productService.getProductById(parseInt(id)),
-          productService.getProductImages(parseInt(id))
-        ]);
-        
-        setProducto(productData);
-        setImagenes(imagenesData.sort((a, b) => (a.orden || 0) - (b.orden || 0))); // Ordenar por campo 'orden'
-        
-        console.log('Producto cargado:', productData);
-        console.log('Imágenes cargadas:', imagenesData);
-      } catch (err) {
-        console.error('Error loading product:', err);
-        setError('Error al cargar el producto. Por favor, intenta nuevamente.');
-      } finally {
-        setLoading(false);
+  // redux
+  const { product, images, reviews, stats, loading, error } = useSelector(
+    (state) => state.productDetail
+  );
+  const reservation = useSelector((state) => state.reservation);
+
+
+  // estado local SOLO para modo exploración
+  const [localStartDate, setLocalStartDate] = useState(() => {
+    if (modoExploracion) {
+      if (reservation?.selectedDates?.start) {
+        return new Date(reservation.selectedDates.start);
       }
-    };
-
-    if (id) {
-      fetchProductoEImagenes();
+      if (location.state?.fechas?.start) {
+        return new Date(location.state.fechas.start);
+      }
     }
-  }, [id]);
+    return null;
+  });
 
-  // Usar el nuevo hook para saber si el usuario puede dejar review y obtener la reservaId
-  const { canReview: userCanReview, loading: loadingCanReview } = useUserReservasFinalizadasSinReview(user?.id, producto?.id);
-  // Además, obtener la reserva FINALIZADA sin review para pasar su id al crear la review
+  const [localEndDate, setLocalEndDate] = useState(() => {
+    if (modoExploracion) {
+      if (reservation?.selectedDates?.end) {
+        return new Date(reservation.selectedDates.end);
+      }
+      if (location.state?.fechas?.end) {
+        return new Date(location.state.fechas.end);
+      }
+    }
+    return null;
+  });
+
+  // Estado para controlar el modal de calendario de rango
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  // Campo que abrió el modal ("retiro" o "devolucion")
+  const [calendarField, setCalendarField] = useState(null);
+  // Estado para el rango seleccionado (sincronizado con los locales)
+  const [selectedRange, setSelectedRange] = useState({
+    startDate: localStartDate,
+    endDate: localEndDate,
+  });
+
+  // Sincronizar selectedRange con los estados locales si cambian
   useEffect(() => {
-    const fetchReservaId = async () => {
-      if (!user || !producto) {
-        setReservaIdParaReview(null);
+    setSelectedRange({
+      startDate: localStartDate,
+      endDate: localEndDate,
+    });
+  }, [localStartDate, localEndDate]);
+
+  // Handler para abrir el modal desde un input
+  const handleCalendarInputClick = (field) => {
+    setCalendarField(field); // "retiro" o "devolucion" (por si se quiere lógica especial)
+    setShowCalendarModal(true);
+  };
+
+  // Handler para confirmar el rango en el modal
+  const handleCalendarConfirm = (range) => {
+    setShowCalendarModal(false);
+    setCalendarField(null);
+    // Actualizar fechas locales y redux
+    setLocalStartDate(range.startDate);
+    setLocalEndDate(range.endDate);
+    dispatch(setDates({ start: range.startDate, end: range.endDate }));
+  };
+
+  // Handler para cerrar el modal sin cambios
+  const handleCalendarClose = () => {
+    setShowCalendarModal(false);
+    setCalendarField(null);
+  };
+
+  const [localPickupLocation, setLocalPickupLocation] = useState(() => {
+    if (modoExploracion) {
+      if (reservation?.pickupLocation) return reservation.pickupLocation;
+      if (location.state?.ubicaciones?.pickup)
+        return location.state.ubicaciones.pickup;
+    }
+    return "";
+  });
+
+  const [localDropoffLocation, setLocalDropoffLocation] = useState(() => {
+    if (modoExploracion) {
+      if (reservation?.dropoffLocation) return reservation.dropoffLocation;
+      if (location.state?.ubicaciones?.dropoff)
+        return location.state.ubicaciones.dropoff;
+    }
+    return "";
+  });
+
+  const [localReviews, setLocalReviews] = useState(reviews || []);
+  const [creatingReservation, setCreatingReservation] = useState(false);
+  const [reservationError, setReservationError] = useState(null);
+  const [reservationSuccess, setReservationSuccess] = useState(null);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // para mostrar el total
+  const pricePerDay = product?.precio || product?.precioBase || 0;
+  const startDate = modoExploracion
+    ? localStartDate
+    : reservation?.selectedDates?.start
+      ? new Date(reservation.selectedDates.start)
+      : null;
+  const endDate = modoExploracion
+    ? localEndDate
+    : reservation?.selectedDates?.end
+      ? new Date(reservation.selectedDates.end)
+      : null;
+
+  const diffDays =
+    startDate && endDate
+      ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+      : 0;
+  const totalPrice = diffDays * pricePerDay;
+
+  // cargar producto
+  useEffect(() => {
+    if (id) dispatch(fetchProductDetail(parseInt(id)));
+    return () => {
+      dispatch(clearProductDetail());
+    };
+  }, [dispatch, id]);
+
+  useEffect(() => {
+    setLocalReviews(reviews || []);
+  }, [reviews]);
+
+  // handlers para selects (tienen que estar FUERA del JSX)
+  const handlePickupChange = (e) => {
+    const value = e.target.value;
+    setLocalPickupLocation(value);
+    dispatch(setPickupLocation(value));
+  };
+
+  const handleDropoffChange = (e) => {
+    const value = e.target.value;
+    setLocalDropoffLocation(value);
+    dispatch(setDropoffLocation(value));
+  };
+
+  // crear reserva
+  const handleCreateReservation = async (e) => {
+    e.preventDefault();
+    setReservationError(null);
+    setReservationSuccess(null);
+
+    if (!user) return;
+
+    try {
+      setCreatingReservation(true);
+
+      const payload = {
+        userId: user.id,
+        productId: product.id,
+        startDate: startDate ? startDate.toISOString().split("T")[0] : null,
+        endDate: endDate ? endDate.toISOString().split("T")[0] : null,
+        pickupLocation: modoExploracion
+          ? localPickupLocation
+          : reservation.pickupLocation,
+        dropoffLocation: modoExploracion
+          ? localDropoffLocation
+          : reservation.dropoffLocation,
+        status: "PENDIENTE",
+      };
+
+      if (!payload.startDate || !payload.endDate) {
+        setReservationError("Debes seleccionar fechas antes de continuar.");
         return;
       }
-      try {
-        const reservas = await reviewService.reservationService.getReservasByUser(user.id);
-        const finalizadas = reservas.filter(r => r.productoId === producto.id && r.estado === 'FINALIZADA');
-        const userReviews = await reviewService.getReviewsByUser(user.id);
-        const reservaIdsConReview = userReviews.map(r => r.reservaId);
-        const sinReview = finalizadas.find(res => !reservaIdsConReview.includes(res.id));
-        setReservaIdParaReview(sinReview ? sinReview.id : null);
-      } catch {
-        setReservaIdParaReview(null);
+
+      const created = await reservationService.createReservation(payload);
+      setReservationSuccess({
+        message: "Reserva creada correctamente",
+        reservation: created,
+      });
+
+      if (created?.id) {
+        navigate(`/reserva-confirmada/${created.id}`);
       }
-    };
-    fetchReservaId();
-  }, [user, producto]);
-
-  const handleAddReview = async (reviewData) => {
-    try {
-      if (!reservaIdParaReview) throw new Error('No hay reserva FINALIZADA sin review disponible');
-      const newReview = await reviewService.createReview({
-        rating: reviewData.rating,
-        comment: reviewData.comment,
-        userId: user.id,
-        productId: producto.id,
-        reservaId: reservaIdParaReview
-      });
-      refetchReviews();
-      setReservaIdParaReview(null);
-      return newReview;
-    } catch (error) {
-      console.error('Error al crear review:', error);
-      throw error;
+    } catch (err) {
+      console.error("Error creando reserva:", err);
+      setReservationError(err?.message || "No se pudo crear la reserva");
+    } finally {
+      setCreatingReservation(false);
     }
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: producto.nombre,
-        text: `Mira este increíble vehículo: ${producto.nombre}`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      // Aquí podrías mostrar una notificación de "enlace copiado"
-    }
-  };
-
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-      );
-    }
-
-    if (hasHalfStar) {
-      stars.push(
-        <div key="half" className="relative">
-          <Star className="w-4 h-4 text-gray-300" />
-          <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
-            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-          </div>
-        </div>
-      );
-    }
-
-    const emptyStars = 5 - Math.ceil(rating);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(
-        <Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />
-      );
-    }
-
-    return stars;
-  };
-
-  const nextImage = () => {
-    if (imagenes && imagenes.length > 0) {
-      setCurrentImageIndex((prev) => 
-        prev === imagenes.length - 1 ? 0 : prev + 1
-      );
-    }
-  };
-
-  const prevImage = () => {
-    if (imagenes && imagenes.length > 0) {
-      setCurrentImageIndex((prev) => 
-        prev === 0 ? imagenes.length - 1 : prev - 1
-      );
-    }
-  };
-
-  // Estado de carga
-  if (loading) {
+  // estados de carga / error
+  if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando producto...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
-  }
 
-  // Estado de error
-  if (error) {
+  if (error)
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Error al cargar el producto</h2>
+          <h2 className="text-2xl font-bold mb-2">
+            Error al cargar el producto
+          </h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={() => navigate('/productos')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={() => navigate("/productos")}
           >
             Volver a productos
           </button>
         </div>
       </div>
     );
-  }
 
-  // Producto no encontrado
-  if (!producto) {
+  if (!product)
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-400 text-6xl mb-4">🔍</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Producto no encontrado</h2>
-          <p className="text-gray-600 mb-4">El producto que buscas no existe o ha sido removido.</p>
-          <button 
-            onClick={() => navigate('/productos')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Ver todos los productos
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <h2 className="text-xl font-semibold">Producto no encontrado</h2>
       </div>
     );
-  }
+
+  const renderStars = (rating = 0) =>
+    Array.from({ length: 5 }, (_, i) => (
+      <span key={i} className={i < rating ? "text-yellow-400" : "text-gray-300"}>
+        ★
+      </span>
+    ));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      {/* Header del producto */}
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+      <StepProgressBar
+        steps={reservationSteps}
+        activeStep={2}
+        onStepClick={(idx) => {
+          if (!modoExploracion) {
+            if (idx === 0) navigate("/");
+            if (idx === 1) navigate("/productos");
+          }
+        }}
+      />
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4 pb-0 border-b border-gray-200">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{producto.nombre}</h1>
-          <div className="flex items-center gap-4 mb-2">
-            <p className="text-lg text-gray-600">{producto.ubicacion || 'Ubicación no especificada'}</p>
-            {reviewStats.totalReviews > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  {renderStars(reviewStats.averageRating)}
-                </div>
-                <span className="text-sm text-gray-600">
-                  {reviewStats.averageRating} ({reviewStats.totalReviews} reseñas)
-                </span>
-              </div>
-            )}
-          </div>
-          <p className="text-sm text-blue-600 font-medium">{producto.categoria?.nombre || producto.categoria}</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {product.nombre}
+          </h1>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <FavoriteButton 
-            product={producto}
-            variant="ghost"
-            size="lg"
-            showText={true}
-          />
-          <button className="p-2 text-gray-500 hover:text-blue-500 transition">
-            <Share2 size={24} />
-          </button>
-          <button 
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition"
-          >
-            <ArrowLeft size={20} />
-            <span className="hidden sm:inline">Volver</span>
-          </button>
-        </div>
+        <FavoriteButton product={product} variant="ghost" size="lg" />
       </div>
 
-      {/* Galería de imágenes */}
-      <div className="mb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-96 lg:h-[500px] relative">
-          {/* Imagen principal */}
-          <div className="lg:row-span-2 relative">
-            {imagenes && imagenes.length > 0 ? (
+      {/* layout principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8">
+        {/* izquierda */}
+        <div>
+          <div className="aspect-[6/4.5] w-full overflow-hidden rounded-xl shadow-sm border border-gray-200">
+            {images?.length ? (
               <img
-                src={imagenes[currentImageIndex].url}
-                alt={imagenes[currentImageIndex].textoAlternativo || producto.nombre}
-                className="w-full h-full object-cover rounded-xl"
-                onLoad={() => {
-                  console.log(`✅ Imagen real del backend cargada: ${imagenes[currentImageIndex].url}`);
-                }}
-                onError={(e) => {
-                  console.error(`❌ BACKEND FALLO - Imagen: ${e.target.src}`);
-                  e.target.style.backgroundColor = '#fee2e2';
-                  e.target.style.border = '2px solid #dc2626';
-                }}
+                src={images[0].url || images[0].imagenUrl}
+                alt={product.nombre}
+                className="object-cover w-full h-full"
               />
             ) : (
-              <div className="w-full h-full bg-gray-100 rounded-xl flex items-center justify-center border-2 border-gray-300">
-                <div className="text-center text-gray-500">
-                  <p className="text-lg">📷</p>
-                  <p className="text-sm">Sin imágenes en backend</p>
-                  <p className="text-xs">{producto?.nombre}</p>
-                </div>
+              <div className="flex items-center justify-center h-full bg-gray-100 text-gray-500">
+                <p>📷 Sin imágenes disponibles</p>
               </div>
             )}
-            
-            {/* Controles de navegación de imágenes */}
-            {imagenes && imagenes.length > 1 && (
-              <>
-                <button
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-opacity"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-opacity"
-                >
-                  <ChevronRight size={20} />
-                </button>
-                
-                {/* Indicadores de imagen */}
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                  {imagenes.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentImageIndex ? 'bg-white' : 'bg-white bg-opacity-50'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
           </div>
-          
-          {/* Grid de imágenes secundarias - Solo en desktop */}
-          {imagenes && imagenes.length > 1 && (
-            <div className="hidden lg:grid grid-cols-2 gap-4">
-              {imagenes.slice(1, 5).map((imagen, index) => (
-                <div key={imagen.id || index} className="relative cursor-pointer" onClick={() => setCurrentImageIndex(index + 1)}>
-                  <img
-                    src={imagen.url}
-                    alt={imagen.textoAlternativo || `${producto.nombre} - vista ${index + 2}`}
-                    className="w-full h-full object-cover rounded-lg hover:opacity-80 transition-opacity"
-                  />
-                  {index === 3 && imagenes.length > 5 && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold">
-                        +{imagenes.length - 4} más
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
+
+          <div className="mt-8 space-y-8">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Descripción
+              </h2>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                {product.descripcion}
+              </p>
+              <p className="text-gray-700 leading-relaxed">
+                {product.descripcionLarga}
+              </p>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Contenido principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Descripción y características */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Descripción */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Descripción</h2>
-            <p className="text-gray-700 leading-relaxed mb-4">{producto.descripcion}</p>
-            <p className="text-gray-700 leading-relaxed">{producto.descripcionLarga}</p>
+            <ProductoCaracteristicas
+              productoId={product.id}
+              layout="grid"
+              showTitle={true}
+              maxItems={12}
+            />
+
+            <div className="mt-4 flex justify-start">
+              <button
+                type="button"
+                className="flex items-center gap-2 bg-gray-100 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded shadow cursor-pointer"
+                onClick={() => setShareOpen(true)}
+              >
+                <Share2 className="w-5 h-5" /> Compartir
+              </button>
+            </div>
           </div>
 
-          {/* Características reales del Backend */}
-          <ProductoCaracteristicas 
-            productoId={producto.id} 
-            layout="grid" 
-            showTitle={true}
-            maxItems={12}
+          <ShareProductModal
+            open={shareOpen}
+            onClose={() => setShareOpen(false)}
+            product={product}
           />
         </div>
 
-        {/* Sidebar con calendario de disponibilidad */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24">
-            <AvailabilityCalendar
-              vehicleId={parseInt(id)}
-              vehicleName={producto.nombre}
-              onDateSelect={setSelectedDates}
-            />
+        {/* derecha */}
+        <aside className="sticky top-24 bg-white rounded-xl shadow-md p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">Reservar este vehículo</h3>
+
+          {/* 2x2: fecha/lugar retiro + fecha/lugar devolución */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* Fecha de retiro */}
+            <div>
+              {modoExploracion ? (
+                <>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fecha de retiro
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={
+                      localStartDate
+                        ? localStartDate.toLocaleDateString("es-AR")
+                        : "No seleccionada"
+                    }
+                    className="w-full border rounded px-3 py-2 bg-white cursor-pointer"
+                    onClick={() => handleCalendarInputClick("retiro")}
+                  />
+                </>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fecha de retiro
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={
+                      startDate
+                        ? startDate.toLocaleDateString("es-AR")
+                        : "No seleccionada"
+                    }
+                    className="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* Lugar de retiro */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Lugar de retiro
+              </label>
+              {modoExploracion ? (
+                <select
+                  value={localPickupLocation}
+                  onChange={handlePickupChange}
+                  className="w-full border rounded px-3 py-2 bg-white cursor-pointer"
+                >
+                  <option value="">Seleccionar ciudad</option>
+                  {locations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  readOnly
+                  value={reservation.pickupLocation || "No especificado"}
+                  className="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed opacity-80"
+                  tabIndex={-1}
+                />
+              )}
+            </div>
+
+            {/* Fecha de devolución */}
+            <div>
+              {modoExploracion ? (
+                <>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fecha de devolución
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={
+                      localEndDate
+                        ? localEndDate.toLocaleDateString("es-AR")
+                        : "No seleccionada"
+                    }
+                    className="w-full border rounded px-3 py-2 bg-white cursor-pointer"
+                    onClick={() => handleCalendarInputClick("devolucion")}
+                  />
+                </>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fecha de devolución
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={
+                      endDate
+                        ? endDate.toLocaleDateString("es-AR")
+                        : "No seleccionada"
+                    }
+                    className="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
+                  />
+                </>
+              )}
+        {/* Modal de calendario de rango */}
+        {modoExploracion && (
+          <RangeCalendarModal
+            open={showCalendarModal}
+            onClose={handleCalendarClose}
+            onConfirm={handleCalendarConfirm}
+            initialRange={{
+              startDate: localStartDate || new Date(),
+              endDate: localEndDate || new Date(),
+              key: "selection"
+            }}
+          />
+        )}
+            </div>
+
+            {/* Lugar de devolución */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Lugar de devolución
+              </label>
+              {modoExploracion ? (
+                <select
+                  value={localDropoffLocation}
+                  onChange={handleDropoffChange}
+                  className="w-full border rounded px-3 py-2 bg-white cursor-pointer"
+                >
+                  <option value="">Seleccionar ciudad</option>
+                  {locations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  readOnly
+                  value={reservation.dropoffLocation || "No especificado"}
+                  className="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed opacity-80"
+                  tabIndex={-1}
+                />
+              )}
+            </div>
           </div>
-        </div>
+
+          {/* Precio */}
+          <div className="border-t border-gray-200 pt-4 mb-4">
+            <p className="text-gray-700">
+              <strong>Precio por día:</strong> ${pricePerDay}
+            </p>
+            <p className="text-gray-700">
+              <strong>Total:</strong>{" "}
+              {diffDays > 0
+                ? `${diffDays} días × $${pricePerDay} = $${totalPrice}`
+                : "Seleccioná fechas"}
+            </p>
+          </div>
+
+          {/* Política */}
+          <div className="text-sm text-gray-600 mb-4">
+            <h4 className="font-semibold text-gray-800 mb-2">
+              Política de reservas
+            </h4>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Cancelación gratuita hasta 24 horas antes</li>
+              <li>Precio incluye seguro básico</li>
+              <li>Combustible no incluido</li>
+              <li>Licencia de conducir válida requerida</li>
+            </ul>
+          </div>
+
+          {/* si no está logueado */}
+          {!user && (
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded mb-3 text-sm text-blue-800">
+              Inicia sesión para continuar con la reserva
+            </div>
+          )}
+
+          <div className="flex justify-between gap-3">
+            {!user && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (modoExploracion) {
+                    navigate("/login", {
+                      state: {
+                        from: location.pathname + location.search,
+                        modoExploracion: true,
+                        fechas: {
+                          start: localStartDate?.toISOString(),
+                          end: localEndDate?.toISOString(),
+                        },
+                        ubicaciones: {
+                          pickup: localPickupLocation,
+                          dropoff: localDropoffLocation,
+                        },
+                      },
+                    });
+                  } else {
+                    navigate("/login", { state: { from: location.pathname } });
+                  }
+                }}
+                className="flex-1 bg-gray-100 text-gray-800 border border-gray-300 py-2 rounded-lg hover:bg-gray-200 transition cursor-pointer"
+              >
+                Iniciar Sesión
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleCreateReservation}
+              disabled={!user || creatingReservation}
+              className={`flex-1 py-2 rounded-lg text-white ${!user
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 transition cursor-pointer"
+                }`}
+            >
+              {creatingReservation ? "Reservando..." : "Confirmar Reserva"}
+            </button>
+          </div>
+
+          {reservationError && (
+            <p className="text-sm text-red-600 mt-3">{reservationError}</p>
+          )}
+          {reservationSuccess && (
+            <p className="text-sm text-green-600 mt-3">
+              {reservationSuccess.message}
+            </p>
+          )}
+        </aside>
       </div>
 
-      {/* Sistema de reseñas */}
+      {/* Reseñas */}
       <div className="mt-16 bg-white rounded-xl border border-gray-200 p-8">
         <ReviewSystem
-          productId={producto.id}
-          reviews={reviews}
-          stats={reviewStats}
-          onAddReview={handleAddReview}
-          canUserReview={userCanReview}
-          reservaIdParaReview={reservaIdParaReview}
+          productId={product.id}
+          reviews={localReviews}
+          stats={stats || { averageRating: 0, totalReviews: 0 }}
+          onAddReview={async (reviewPayload) => {
+            try {
+              const created = await reviewService.createReview(reviewPayload);
+              const refreshed = await reviewService.getReviewsByProduct(
+                product.id
+              );
+              setLocalReviews(refreshed);
+              return created;
+            } catch (err) {
+              throw err;
+            }
+          }}
+          canUserReview={true}
         />
       </div>
     </div>

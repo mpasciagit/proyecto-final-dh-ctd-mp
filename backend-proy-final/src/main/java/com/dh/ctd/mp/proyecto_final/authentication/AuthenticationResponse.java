@@ -19,6 +19,7 @@ public class AuthenticationResponse {
     private String token;          // JWT generado
     private Long usuarioId;        // Id del usuario
     private String nombre;         // Nombre del usuario
+    private String apellido;       // Apellido del usuario
     private String email;          // Email del usuario
     private List<String> roles;    // Roles asignados al usuario
 }

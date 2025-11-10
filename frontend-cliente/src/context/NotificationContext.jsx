@@ -129,7 +129,7 @@ export const NotificationProvider = ({ children }) => {
   const notifyLoginSuccess = useCallback((userName) => {
     return showSuccess(
       `¡Bienvenido de vuelta, ${userName}!`,
-      { duration: 4000 }
+      { duration: 2500 }
     );
   }, [showSuccess]);
 

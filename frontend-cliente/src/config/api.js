@@ -79,7 +79,6 @@ export const buildApiUrl = (endpoint) => {
 // 📡 Configuración de fetch con manejo de errores
 export const apiRequest = async (endpoint, options = {}) => {
   const url = buildApiUrl(endpoint);
-  
   const config = {
     headers: getAuthHeaders(),
     ...options
@@ -87,23 +86,34 @@ export const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    
-    // Si la respuesta no es ok, lanzar error
+
+    // Si la respuesta no es ok (4xx o 5xx), lanzar error
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ 
-        message: `Error ${response.status}: ${response.statusText}` 
-      }));
-      throw new Error(errorData.message || `HTTP Error ${response.status}`);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = await response.text();
+      }
+      throw new Error(errorData.message || errorData || `HTTP Error ${response.status}`);
     }
-    
-    // Si es 204 No Content, retornar null
+
+    // Si es 204 No Content, retornar un objeto con mensaje de éxito
     if (response.status === 204) {
-      return null;
+      return { successMessage: 'Operación completada sin contenido de respuesta.' };
     }
-    
-    // Intentar parsear JSON
-    return await response.json();
-    
+
+    // Obtener el Content-Type para decidir cómo leer el cuerpo
+    const contentType = response.headers.get("content-type");
+
+    if (contentType && contentType.includes("application/json")) {
+      // Caso A: Si es JSON
+      return await response.json();
+    } else {
+      // Caso B: Si es texto plano
+      const text = await response.text();
+      return { successMessage: text };
+    }
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;

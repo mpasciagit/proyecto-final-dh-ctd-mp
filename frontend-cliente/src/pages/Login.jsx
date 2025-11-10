@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
+import Logo from '../components/Header/Logo';
 import { useAuth } from '../context/AuthContext';
 import { useAuthNotifications } from '../hooks/useAuthNotifications';
 
@@ -19,7 +20,7 @@ const Login = () => {
   const [loginError, setLoginError] = useState('');
 
   // Obtener la página de donde vino el usuario
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from || '/';
 
   const validateForm = () => {
     const newErrors = {};
@@ -80,23 +81,18 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-8">
+  <div className="min-h-screen bg-blue-600 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        {/* Header con botón de volver */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Volver
-          </button>
-          
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        {/* Header sin botón de volver externo */}
+        <div className="mb-4">
+          <div className="text-center flex flex-col items-center gap-2">
+            <div className="self-start ml-29 mb-3 scale-170">
+              <Logo />
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-0">
               Iniciar Sesión
             </h1>
-            <p className="text-gray-600">
+            <p className="text-white mb-0">
               Accede a tu cuenta para continuar
             </p>
           </div>
@@ -159,7 +155,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -167,13 +163,25 @@ const Login = () => {
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
               )}
+              <div className="mt-2 flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="text-sm text-blue-600 hover:text-blue-800 focus:outline-none cursor-pointer"
+                >
+                  &larr; Volver
+                </button>
+                <Link to="/recuperar-contraseña" className="text-sm text-blue-600 hover:underline focus:outline-none">
+                  ¿Has olvidado tu contraseña?
+                </Link>
+              </div>
             </div>
 
             {/* Botón Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

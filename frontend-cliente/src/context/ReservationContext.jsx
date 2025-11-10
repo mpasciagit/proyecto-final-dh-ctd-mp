@@ -47,7 +47,6 @@ export const ReservationProvider = ({ children }) => {
       }));
       
       setReservations(reservationsWithParsedDates);
-      console.log('✅ Reservas cargadas desde backend:', reservationsWithParsedDates);
     } catch (error) {
       console.error('❌ Error al cargar reservas:', error);
       setReservations([]);
@@ -80,15 +79,11 @@ export const ReservationProvider = ({ children }) => {
         status: 'PENDIENTE'
       };
 
-      console.log('📤 Datos usuario:', user);
-      console.log('📤 Datos reserva recibidos:', reservationData);
-      console.log('📤 Datos formateados para backend:', backendData);
       const newReservation = await reservationService.createReservation(backendData);
       
       // 🔄 Recargar reservas del usuario para tener datos actualizados
       await loadUserReservations();
 
-      console.log('✅ Reserva creada exitosamente:', newReservation);
       return { success: true, reservation: newReservation };
     } catch (error) {
       console.error('❌ Error al crear reserva:', error);
@@ -104,13 +99,11 @@ export const ReservationProvider = ({ children }) => {
 
     try {
       // 🚫 Cancelar reserva en el backend
-      console.log('🚫 Cancelando reserva:', reservationId);
       await reservationService.cancelReservation(reservationId);
       
       // 🔄 Recargar reservas para tener datos actualizados
       await loadUserReservations();
 
-      console.log('✅ Reserva cancelada exitosamente');
       return { success: true };
     } catch (error) {
       console.error('❌ Error al cancelar reserva:', error);
@@ -130,7 +123,6 @@ export const ReservationProvider = ({ children }) => {
       }
 
       // 📡 Si no está en memoria, consultar al backend
-      console.log('🔍 Consultando reserva en backend:', reservationId);
       const reservation = await reservationService.getReservationById(reservationId);
       
       // 🔧 FIX: Parsear fechas también para reserva individual

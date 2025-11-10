@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import authService from '../services/authService.js';
+import { clearReservation } from '../redux/slices/reservationSlice.js';
 
 const AuthContext = createContext();
 
@@ -12,26 +14,22 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const dispatch = useDispatch();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Verificar si hay un usuario logueado al inicializar
+  // ✅ Verificar si hay un usuario logueado al inicializar
   useEffect(() => {
     const initializeAuth = async () => {
       setIsLoading(true);
-      
       try {
-        // Verificar si hay token guardado
         if (authService.isAuthenticated()) {
           const currentUser = authService.getCurrentUser();
-          
-          // Verificar si el token es válido
           const isValidToken = await authService.verifyToken();
-          
+
           if (isValidToken && currentUser) {
             setUser(currentUser);
           } else {
-            // Token inválido, limpiar datos
             authService.logout();
             setUser(null);
           }
@@ -48,16 +46,13 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
+  // ✅ Login
   const login = async (email, password) => {
     setIsLoading(true);
-    
     try {
       const response = await authService.login(email, password);
-      
-      // El authService ya guarda el token y usuario en localStorage
       const currentUser = authService.getCurrentUser();
       setUser(currentUser);
-      
       return { success: true, user: currentUser };
     } catch (error) {
       console.error('Error en login:', error);
@@ -70,25 +65,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ Registro
   const register = async (userData) => {
     setIsLoading(true);
-    
     try {
-      // Formatear datos para el backend
       const registerData = {
         nombre: userData.firstName,
         apellido: userData.lastName,
         email: userData.email,
         password: userData.password,
-        rol: 'USER' // Rol por defecto para clientes
+        rol: 'USER'
       };
-      
       const response = await authService.register(registerData);
-      
-      // El authService ya guarda el token y usuario en localStorage
       const currentUser = authService.getCurrentUser();
       setUser(currentUser);
-      
       return { success: true, user: currentUser };
     } catch (error) {
       console.error('Error en registro:', error);
@@ -101,29 +91,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ Logout completo con limpieza
   const logout = () => {
-    authService.logout();
-    setUser(null);
+    try {
+      // 1️⃣ Logout del servicio (borra token y usuario)
+      authService.logout();
+      setUser(null);
+
+      // 2️⃣ Limpieza de Redux + localStorage del estado de reserva
+      dispatch(clearReservation());
+      localStorage.removeItem('reservationState');
+
+      // 3️⃣ (Opcional) Redirigir al inicio
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error durante logout:', error);
+    }
   };
 
+  // ✅ Actualizar perfil localmente (placeholder)
   const updateProfile = async (updatedData) => {
     setIsLoading(true);
-    
     try {
-      // Por ahora mantener funcionalidad local hasta que tengamos endpoint de perfil
       const currentUser = authService.getCurrentUser();
-      if (!currentUser) {
-        throw new Error('Usuario no autenticado');
-      }
-      
-      // Simular delay de API
+      if (!currentUser) throw new Error('Usuario no autenticado');
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Actualizar datos localmente
       const updatedUser = { ...currentUser, ...updatedData };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
-      
       return { success: true, user: updatedUser };
     } catch (error) {
       console.error('Error al actualizar perfil:', error);
@@ -136,10 +131,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para cambiar contraseña usando el backend
+  // ✅ Cambiar contraseña
   const changePassword = async (currentPassword, newPassword) => {
     setIsLoading(true);
-    
     try {
       await authService.changePassword(currentPassword, newPassword);
       return { success: true, message: 'Contraseña cambiada exitosamente' };
@@ -154,7 +148,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🔐 Verificar autenticación combinando user y token
+  // ✅ Helpers
   const isAuthenticated = !!user && authService.isAuthenticated();
   const isAdmin = user?.role === 'admin';
 

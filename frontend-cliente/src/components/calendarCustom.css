@@ -1,0 +1,26 @@
+/* Día actual en el calendario: negrita y rojo, sin subrayado */
+.rdrDayToday .rdrDayNumber span {
+  color: #dc2626 !important; /* rojo-600 de Tailwind */
+  font-weight: bold;
+}
+/* Nombre del mes y año (ej: 'nov 2025') en negrita arriba de cada calendario */
+.rdrMonthName {
+  font-weight: bold !important;
+}
+/* Línea divisoria debajo de los nombres de los días de la semana */
+.rdrWeekDays {
+  border-bottom: 4px solid #e5e7eb;
+  margin-bottom: 2px;
+}
+/* Mes y año en negrita en el encabezado del calendario */
+.rdrMonthAndYearPickers, .rdrMonthAndYearWrapper .rdrMonthPicker, .rdrMonthAndYearWrapper .rdrYearPicker {
+  font-weight: bold !important;
+}
+/* Nombres de los días de la semana en negrita para react-date-range */
+.rdrWeekDays span {
+  font-weight: bold;
+}
+/*
+  Custom styles to highlight the current day in react-date-range calendar
+*/
+

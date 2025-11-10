@@ -6,6 +6,8 @@ package com.dh.ctd.mp.proyecto_final.mapper;
      import com.dh.ctd.mp.proyecto_final.entity.Caracteristica;
      import com.dh.ctd.mp.proyecto_final.entity.ProductoCaracteristica;
      import com.dh.ctd.mp.proyecto_final.entity.Categoria;
+     import com.dh.ctd.mp.proyecto_final.dto.ImagenDTO;
+     import com.dh.ctd.mp.proyecto_final.entity.Imagen;
 
      import java.util.List;
      import java.util.Set;
@@ -40,6 +42,15 @@ public class ProductoMapper {
             dto.setCaracteristicas(caracteristicas);
         } else {
             dto.setCaracteristicas(new ArrayList<>());
+        }
+
+        if (producto.getImagenes() != null) {
+            List<ImagenDTO> imagenes = producto.getImagenes().stream()
+                .map(ImagenMapper::toDTO)
+                .collect(Collectors.toList());
+            dto.setImagenes(imagenes);
+        } else {
+            dto.setImagenes(new ArrayList<>());
         }
 
         return dto;

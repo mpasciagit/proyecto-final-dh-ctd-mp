@@ -15,7 +15,8 @@ public class ReviewMapper {
                 .puntuacion(review.getPuntuacion())
                 .comentario(review.getComentario())
                 .fechaCreacion(review.getFechaCreacion())
-                .usuarioId(review.getUsuario() != null ? review.getUsuario().getId() : null)
+              //.usuarioId(review.getUsuario() != null ? review.getUsuario().getId() : null)
+                .usuarioNombre(review.getUsuario() != null ? review.getUsuario().getNombre() : null)
                 .productoId(review.getProducto() != null ? review.getProducto().getId() : null)
                 .reservaId(review.getReserva() != null ? review.getReserva().getId() : null)
                 .build();

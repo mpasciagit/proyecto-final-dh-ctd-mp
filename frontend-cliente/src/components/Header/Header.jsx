@@ -17,9 +17,8 @@ export default function Header() {
 
         {/* Menú Desktop */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className="hover:text-blue-400 transition-colors">Inicio</Link>
-          <Link to="/categorias" className="hover:text-blue-400 transition-colors">Tipo de Vehículo</Link>
-          <Link to="/reservas" className="hover:text-blue-400 transition-colors">Reservas</Link>
+          <Link to="/" className="hover:text-blue-400 transition-colors">Reservar</Link>
+          <Link to="/categorias" className="hover:text-blue-400 transition-colors">Elige tu Vehículo</Link>
           <Link to="/contacto" className="hover:text-blue-400 transition-colors">Contacto</Link>
           <NavButtons />
         </nav>
@@ -38,9 +37,8 @@ export default function Header() {
       {isOpen && (
         <nav className="md:hidden bg-slate-800 border-t border-slate-700">
           <div className="flex flex-col items-center gap-4 py-4">
-            <Link to="/" className="hover:text-blue-400 py-2" onClick={() => setIsOpen(false)}>Inicio</Link>
-            <Link to="/categorias" className="hover:text-blue-400 py-2" onClick={() => setIsOpen(false)}>Tipo de Vehículo</Link>
-            <Link to="/reservas" className="hover:text-blue-400 py-2" onClick={() => setIsOpen(false)}>Reservas</Link>
+            <Link to="/" className="hover:text-blue-400 py-2" onClick={() => setIsOpen(false)}>Reservar</Link>
+            <Link to="/categorias" className="hover:text-blue-400 py-2" onClick={() => setIsOpen(false)}>Elige tu Vehículo</Link>
             <Link to="/contacto" className="hover:text-blue-400 py-2" onClick={() => setIsOpen(false)}>Contacto</Link>
             <div className="mt-2">
               <NavButtons />

@@ -1,101 +1,135 @@
+// src/components/SearchSection.jsx
 import { useState, useEffect } from 'react';
+import StepProgressBar from './StepProgressBar';
+import { reservationSteps } from '../config/steps';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  setCategory,
+  setDates,
+  setPickupLocation,
+  setDropoffLocation,
+} from '../redux/slices/reservationSlice';
+import { fetchCategories } from '../redux/slices/categorySlice';
 import { useNavigate } from 'react-router-dom';
-import DatePicker, { registerLocale } from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import es from 'date-fns/locale/es';
-registerLocale('es', es);
-import { Calendar, MapPin, Search, Users, Car } from 'lucide-react';
-import { categoryService } from '../services/categoryService';
+
+import RangeCalendarModal from './RangeCalendarModal';
+import { Calendar, MapPin, Search, Car } from 'lucide-react';
+import { locations } from '../utils/locations';
 
 const SearchSection = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  /* Redux: categorías y reserva persistida */
+  const { items: categorias, loading } = useSelector((state) => state.category);
+  const reservation = useSelector((state) => state.reservation);
+
+  /* Estado local del formulario, inicializado con Redux */
   const [searchData, setSearchData] = useState({
-    location: '',
-    startDate: null,
-    endDate: null,
-    vehicleType: '',
-    passengers: 1
+    location: reservation.pickupLocation || '',
+    dropoffLocation: reservation.dropoffLocation || '',
+    vehicleType: reservation.selectedCategory || '',
+    startDate: reservation.selectedDates?.start
+      ? new Date(reservation.selectedDates.start)
+      : null,
+    endDate: reservation.selectedDates?.end
+      ? new Date(reservation.selectedDates.end)
+      : null,
   });
 
-  const [categorias, setCategorias] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Estado para controlar el modal de calendario de rango
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  // Campo que abrió el modal ("retiro" o "devolucion")
+  const [calendarField, setCalendarField] = useState(null);
+  // Estado para el rango seleccionado (sincronizado con searchData)
+  const [selectedRange, setSelectedRange] = useState({
+    startDate: searchData.startDate,
+    endDate: searchData.endDate,
+  });
 
-  // 🚀 Cargar categorías del backend
+  // Sincronizar selectedRange con searchData si cambian
   useEffect(() => {
-    const fetchCategorias = async () => {
-      try {
-        const categoriasData = await categoryService.getAllCategories();
-        setCategorias(categoriasData);
-        console.log('✅ Categorías cargadas desde backend:', categoriasData);
-      } catch (error) {
-        console.error('❌ Error al cargar categorías:', error);
-        console.log('🟡 SEARCHSECTION - USANDO FALLBACK - DATOS MOCKADOS (NO BACKEND)');
-        // Fallback a categorías por defecto si falla el backend
-        setCategorias([
-          { id: 1, nombre: 'Económico [MOCK]' },
-          { id: 2, nombre: 'SUV [MOCK]' },
-          { id: 3, nombre: 'Lujo [MOCK]' },
-          { id: 4, nombre: 'Pickup [MOCK]' }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setSelectedRange({
+      startDate: searchData.startDate,
+      endDate: searchData.endDate,
+    });
+  }, [searchData.startDate, searchData.endDate]);
 
-    fetchCategorias();
-  }, []);
+  // Handler para abrir el modal desde un input
+  const handleCalendarInputClick = (field) => {
+    setCalendarField(field); // "retiro" o "devolucion" (por si se quiere lógica especial)
+    setShowCalendarModal(true);
+  };
 
+  // Handler para confirmar el rango en el modal
+  const handleCalendarConfirm = (range) => {
+    setShowCalendarModal(false);
+    setCalendarField(null);
+    // Actualizar fechas en searchData y redux
+    setSearchData((prev) => ({
+      ...prev,
+      startDate: range.startDate,
+      endDate: range.endDate,
+    }));
+    dispatch(setDates({ start: range.startDate, end: range.endDate }));
+  };
+
+  // Handler para cerrar el modal sin cambios
+  const handleCalendarClose = () => {
+    setShowCalendarModal(false);
+    setCalendarField(null);
+  };
+
+  /* Fechas y errores */
+  const [dateErrors, setDateErrors] = useState({ start: false, end: false });
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+  /* Step Progress */
+  const [activeStep, setActiveStep] = useState(0);
+
+  /* Cargar categorías al montar */
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+
+  /* Tipos de vehículo */
+  const vehicleTypes = [
+    { value: '', label: 'Todos los vehículos' },
+    ...categorias.map((cat) => ({ value: cat.nombre, label: cat.nombre })),
+  ];
+
+  /* Submit del formulario */
   const handleSearch = (e) => {
     e.preventDefault();
-    
-    // Validaciones básicas
-    if (!searchData.startDate || !searchData.endDate) {
-      alert('Por favor selecciona las fechas de retiro y devolución');
-      return;
-    }
-    
-    if (searchData.startDate >= searchData.endDate) {
-      alert('La fecha de devolución debe ser posterior a la fecha de retiro');
-      return;
-    }
 
-    // Construir query params para la búsqueda
-    const params = new URLSearchParams({
-      location: searchData.location,
-      startDate: searchData.startDate.toISOString(),
-      endDate: searchData.endDate.toISOString(),
-      categoria: searchData.vehicleType, // Enviar el ID de la categoría como 'categoria'
-      passengers: searchData.passengers.toString()
-    });
+    const errors = {
+      start: !searchData.startDate,
+      end: !searchData.endDate,
+    };
+    setDateErrors(errors);
+    if (errors.start || errors.end) return;
 
-    // Navegar a productos con los filtros aplicados
+    // Guardar en Redux (persistirá automáticamente)
+    dispatch(setCategory(searchData.vehicleType));
+    dispatch(setDates({ start: searchData.startDate, end: searchData.endDate }));
+    dispatch(setPickupLocation(searchData.location));
+    dispatch(setDropoffLocation(searchData.dropoffLocation));
+
+    // Navegar con filtros (sin incluir location)
+    const params = new URLSearchParams();
+    if (searchData.vehicleType)
+      params.append('vehicleType', searchData.vehicleType);
+    if (searchData.startDate)
+      params.append('startDate', searchData.startDate.toISOString().split('T')[0]);
+    if (searchData.endDate)
+      params.append('endDate', searchData.endDate.toISOString().split('T')[0]);
+
     navigate(`/productos?${params.toString()}`);
   };
 
-  // 🚗 Generar tipos de vehículo dinámicamente desde categorías del backend
-  const vehicleTypes = [
-    { value: '', label: 'Todos los vehículos' },
-    ...categorias.map(categoria => ({
-      value: categoria.id, // Usar el ID como value
-      label: categoria.nombre
-    }))
-  ];
-
-  const locations = [
-    'Buenos Aires',
-    'Córdoba',
-    'Rosario',
-    'Mendoza',
-    'La Plata',
-    'Mar del Plata',
-    'Salta',
-    'Bariloche'
-  ];
-
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
+  /* Render principal */
   return (
     <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white py-16 px-4">
       <div className="max-w-6xl mx-auto">
@@ -105,64 +139,153 @@ const SearchSection = () => {
             Encuentra tu vehículo ideal
           </h1>
           <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto">
-            Alquila el auto perfecto para tu próximo viaje. 
-            Más de 1000 vehículos disponibles en toda Argentina.
+            Alquila el auto perfecto para tu próximo viaje. Más de 1000
+            vehículos disponibles en toda Argentina.
           </p>
         </div>
 
-        {/* Formulario de búsqueda */}
+        {/* Formulario */}
         <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 text-gray-900">
-          <form onSubmit={handleSearch} className="space-y-6">
-            
-            {/* Título del formulario */}
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-                Buscar vehículo
-              </h2>
-              <p className="text-gray-600">
-                Completa los datos para encontrar las mejores opciones
-              </p>
+          {/* Progreso */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-xl mx-auto">
+              <StepProgressBar
+                steps={reservationSteps}
+                activeStep={activeStep}
+                onStepClick={setActiveStep}
+              />
             </div>
+          </div>
 
-            {/* Grid de campos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              
-              {/* Ubicación */}
+          <form onSubmit={handleSearch} className="space-y-6 mt-6">
+            {/* Fecha Retiro + Lugar Retiro */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <Calendar className="inline w-4 h-4 mr-1" />
+                  Fecha de Retiro
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={
+                    searchData.startDate
+                      ? searchData.startDate.toLocaleDateString("es-AR")
+                      : "Seleccionar fecha de retiro"
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white cursor-pointer"
+                  onClick={() => handleCalendarInputClick("retiro")}
+                />
+                {dateErrors.start && (
+                  <p className="text-red-600 text-sm mt-2">
+                    Selecciona una fecha de retiro
+                  </p>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <MapPin className="inline w-4 h-4 mr-1" />
-                  Ubicación
+                  Lugar de Retiro
                 </label>
                 <select
                   value={searchData.location}
-                  onChange={(e) => setSearchData(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  onChange={(e) =>
+                    setSearchData((prev) => ({ ...prev, location: e.target.value }))
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
                 >
                   <option value="">Seleccionar ciudad</option>
-                  {locations.map(location => (
-                    <option key={location} value={location}>
-                      {location}
+                  {locations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
                     </option>
                   ))}
                 </select>
               </div>
+            </div>
 
-              {/* Tipo de vehículo */}
+            {/* Fecha Devolución + Lugar Devolución */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <Calendar className="inline w-4 h-4 mr-1" />
+                  Fecha de Devolución
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={
+                    searchData.endDate
+                      ? searchData.endDate.toLocaleDateString("es-AR")
+                      : "Seleccionar fecha de devolución"
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white cursor-pointer"
+                  onClick={() => handleCalendarInputClick("devolucion")}
+                />
+            {/* Modal de calendario de rango */}
+            <RangeCalendarModal
+              open={showCalendarModal}
+              onClose={handleCalendarClose}
+              onConfirm={handleCalendarConfirm}
+              initialRange={{
+                startDate: searchData.startDate || new Date(),
+                endDate: searchData.endDate || new Date(),
+                key: "selection"
+              }}
+            />
+                {dateErrors.end && (
+                  <p className="text-red-600 text-sm mt-2">
+                    Selecciona una fecha de devolución
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <MapPin className="inline w-4 h-4 mr-1" />
+                  Lugar de Devolución
+                </label>
+                <select
+                  value={searchData.dropoffLocation}
+                  onChange={(e) =>
+                    setSearchData((prev) => ({
+                      ...prev,
+                      dropoffLocation: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Seleccionar ciudad</option>
+                  {locations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Categoría + Botón Buscar */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <Car className="inline w-4 h-4 mr-1" />
-                  Tipo de vehículo
+                  Categoría de Vehículos
                 </label>
                 <select
                   value={searchData.vehicleType}
-                  onChange={(e) => setSearchData(prev => ({ ...prev, vehicleType: e.target.value }))}
+                  onChange={(e) =>
+                    setSearchData((prev) => ({
+                      ...prev,
+                      vehicleType: e.target.value,
+                    }))
+                  }
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg disabled:bg-gray-100"
                 >
                   {loading ? (
                     <option value="">Cargando categorías...</option>
                   ) : (
-                    vehicleTypes.map(type => (
+                    vehicleTypes.map((type) => (
                       <option key={type.value} value={type.value}>
                         {type.label}
                       </option>
@@ -170,93 +293,15 @@ const SearchSection = () => {
                   )}
                 </select>
               </div>
-
-              {/* Número de pasajeros */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Users className="inline w-4 h-4 mr-1" />
-                  Pasajeros
-                </label>
-                <select
-                  value={searchData.passengers}
-                  onChange={(e) => setSearchData(prev => ({ ...prev, passengers: parseInt(e.target.value) }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors cursor-pointer"
                 >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                    <option key={num} value={num}>
-                      {num} {num === 1 ? 'pasajero' : 'pasajeros'}
-                    </option>
-                  ))}
-                </select>
+                  <Search className="w-5 h-5 mr-2" />
+                  Buscar Vehículo
+                </button>
               </div>
-            </div>
-
-            {/* Rango de fechas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Fecha de retiro */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Calendar className="inline w-4 h-4 mr-1" />
-                  Fecha de retiro
-                </label>
-                <DatePicker
-                  selected={searchData.startDate}
-                  onChange={(date) => setSearchData(prev => ({ ...prev, startDate: date }))}
-                  selectsStart
-                  startDate={searchData.startDate}
-                  endDate={searchData.endDate}
-                  minDate={today}
-                  placeholderText="Seleccionar fecha de retiro"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  dateFormat="dd/MM/yyyy"
-                  showMonthDropdown
-                  showYearDropdown
-                  dropdownMode="select"
-                  locale="es"
-                />
-              </div>
-
-              {/* Fecha de devolución */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Calendar className="inline w-4 h-4 mr-1" />
-                  Fecha de devolución
-                </label>
-                <DatePicker
-                  selected={searchData.endDate}
-                  onChange={(date) => setSearchData(prev => ({ ...prev, endDate: date }))}
-                  selectsEnd
-                  startDate={searchData.startDate}
-                  endDate={searchData.endDate}
-                  minDate={searchData.startDate || tomorrow}
-                  placeholderText="Seleccionar fecha de devolución"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  dateFormat="dd/MM/yyyy"
-                  showMonthDropdown
-                  showYearDropdown
-                  dropdownMode="select"
-                  locale="es"
-                />
-              </div>
-            </div>
-
-            {/* Botón de búsqueda */}
-            <div className="flex justify-center pt-4">
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-              >
-                <Search className="w-5 h-5" />
-                Realizar búsqueda
-              </button>
-            </div>
-
-            {/* Información adicional */}
-            <div className="text-center text-sm text-gray-500 pt-4 border-t border-gray-200">
-              <p>
-                💡 <strong>Tip:</strong> Los precios pueden variar según la temporada y disponibilidad. 
-                ¡Reserva con anticipación para obtener las mejores tarifas!
-              </p>
             </div>
           </form>
         </div>

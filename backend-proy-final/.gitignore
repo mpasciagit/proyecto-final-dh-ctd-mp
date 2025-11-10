@@ -35,3 +35,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Archivo con credenciales reales
+.env

@@ -56,6 +56,12 @@ public class AuthenticationService {
 
         Usuario saved = usuarioRepository.save(usuario);
 
+        // Enviar correo de confirmación de registro
+        emailService.sendRegistrationConfirmationEmail(
+            saved.getEmail(),
+            saved.getNombre()
+        );
+
         UserDetails userDetails = userDetailsService.loadUserByUsername(saved.getEmail());
         String jwtToken = jwtService.generateToken(userDetails);
 
@@ -84,6 +90,7 @@ public class AuthenticationService {
                 .token(jwtToken)
                 .usuarioId(usuario.getId())
                 .nombre(usuario.getNombre())
+                .apellido(usuario.getApellido())
                 .email(usuario.getEmail())
                 .roles(List.of(usuario.getRol().getNombre()))
                 .build();

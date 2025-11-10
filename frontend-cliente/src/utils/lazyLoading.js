@@ -4,9 +4,8 @@ import { lazy } from 'react';
 // Componentes que se cargan bajo demanda
 export const LazyProductDetail = lazy(() => import('../pages/ProductDetail'));
 export const LazyReservationConfirmation = lazy(() => import('../pages/ReservationConfirmation'));
-export const LazyAdvancedFilters = lazy(() => import('../components/AdvancedFilters'));
 export const LazyReviewSystem = lazy(() => import('../components/ReviewSystem'));
-export const LazyAvailabilityCalendar = lazy(() => import('../components/AvailabilityCalendar'));
+
 
 // Code splitting por rutas
 export const routeComponents = {
@@ -14,10 +13,10 @@ export const routeComponents = {
   Productos: lazy(() => import('../pages/Productos')),
   ProductDetail: lazy(() => import('../pages/ProductDetail')),
   Categorias: lazy(() => import('../pages/Categorias')),
+  ProductosDisponibles: lazy(() => import("../pages/ProductosDisponibles")),
   Login: lazy(() => import('../pages/Login')),
   Registro: lazy(() => import('../pages/Registro')),
   Reservas: lazy(() => import('../pages/Reservas')),
-  CreateReservation: lazy(() => import('../pages/CreateReservation')),
   ReservationConfirmation: lazy(() => import('../pages/ReservationConfirmation')),
   MisFavoritos: lazy(() => import('../pages/MisFavoritos')),
   Contacto: lazy(() => import('../pages/Contacto'))
@@ -29,7 +28,7 @@ export const preloadComponents = () => {
   const componentsToPreload = [
     () => import('../pages/ProductDetail'),
     () => import('../components/ReviewSystem'),
-    () => import('../components/AvailabilityCalendar')
+
   ];
 
   componentsToPreload.forEach(loadComponent => {
@@ -71,9 +70,9 @@ export const initializeOptimizations = () => {
 export default {
   LazyProductDetail,
   LazyReservationConfirmation,
-  LazyAdvancedFilters,
+  // LazyAdvancedFilters,
   LazyReviewSystem,
-  LazyAvailabilityCalendar,
+
   routeComponents,
   imageOptimization,
   initializeOptimizations

@@ -21,6 +21,7 @@ class AuthService {
           id: response.usuarioId,
           email: response.email,
           nombre: response.nombre,
+          apellido: response.apellido,
           roles: response.roles
         };
         localStorage.setItem('user', JSON.stringify(userData));
@@ -50,6 +51,7 @@ class AuthService {
           id: response.usuarioId,
           email: response.email,
           nombre: response.nombre,
+          apellido: response.apellido,
           roles: response.roles
         };
         localStorage.setItem('user', JSON.stringify(userDataComplete));

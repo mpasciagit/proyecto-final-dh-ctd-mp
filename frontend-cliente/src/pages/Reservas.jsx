@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 function ReviewModal({ open, onClose, comentario }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-blue-600 bg-opacity-50">
       <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-lg">
         <h3 className="text-lg font-bold mb-4">Tu reseña</h3>
         <div
@@ -12,7 +12,7 @@ function ReviewModal({ open, onClose, comentario }) {
         >
           {comentario}
         </div>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={onClose}>Cerrar</button>
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer" onClick={onClose}>Cerrar</button>
       </div>
     </div>
   );
@@ -21,12 +21,15 @@ import { useLocation } from 'react-router-dom';
 import productService from '../services/productService';
 import { Link } from 'react-router-dom';
 import { Star, Calendar, MapPin, Car, Clock, CheckCircle, XCircle, Eye, Plus } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { clearReservation } from '../redux/slices/reservationSlice';
 import { useReservations } from '../context/ReservationContext';
 import reviewService from '../services/reviewService';
 import ReviewSystem from '../components/ReviewSystem';
 import { useAuth } from '../context/AuthContext';
 
 export default function Reservas() {
+  const dispatch = useDispatch();
 
   const { user } = useAuth();
   const { getReservationHistory, cancelReservation, isLoading, loadUserReservations } = useReservations();
@@ -174,10 +177,13 @@ export default function Reservas() {
         </div>
         
         <Link
-          to="/productos"
+            to="/"
+            onClick={() => {
+              localStorage.removeItem("reservationState");
+              dispatch(clearReservation());
+            }}
           className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          <Plus className="w-4 h-4 mr-2" />
           Nueva Reserva
         </Link>
       </div>
@@ -239,7 +245,7 @@ export default function Reservas() {
                   <img
                     src={reservation.vehicleImage || '/placeholder-car.jpg'}
                     alt={reservation.vehicleName || 'Vehículo'}
-                    className="w-32 h-20 object-cover rounded-md"
+                    className="w-48 h-28 object-cover rounded-lg shadow"
                   />
                 </div>
                 {/* Info principal */}
@@ -284,7 +290,7 @@ export default function Reservas() {
                                 <svg key={i} className={`inline w-4 h-4 ${i < puntuacion ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20"><polygon points="9.9,1.1 7.6,6.6 1.6,7.6 6,11.9 4.9,17.9 9.9,14.9 14.9,17.9 13.8,11.9 18.2,7.6 12.2,6.6 "/></svg>
                               ))}
                             </span>
-                            <button className="text-blue-600 underline font-medium" onClick={() => setOpenReviewModalId(reservation.id)}>
+                            <button className="text-blue-600 underline font-medium cursor-pointer" onClick={() => setOpenReviewModalId(reservation.id)}>
                               Ver reseña
                             </button>
                           </div>
@@ -292,13 +298,13 @@ export default function Reservas() {
                       })()
                     ) : reservation.estado === 'FINALIZADA' || reservation.status === 'FINALIZADA' ? (
                       <button
-                        className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm w-full mb-2"
+                        className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm w-full mb-2 cursor-pointer"
                         onClick={() => {
                           setShowReviewForm(true);
                           setReviewReserva(reservation);
                         }}
                       >
-                        Dejar Reseña
+                        Deja una Reseña
                       </button>
                     ) : null}
                   </div>

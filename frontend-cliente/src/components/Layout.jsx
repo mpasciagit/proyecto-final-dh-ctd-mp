@@ -1,16 +1,24 @@
 import { Outlet } from "react-router-dom";
 import Header from "./Header/Header";
 import Footer from "./Footer";
+import WhatsappButton from "./WhatsappButton";
 
 export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+    <div className="flex flex-col min-h-screen">
+      {/* Header fijo */}
       <Header />
-      {/* Agregamos pt-20 para compensar el header fixed */}
-      <main className="flex-grow px-6 py-8 pt-20">
-        <Outlet /> {/* Aquí se renderizan las páginas (Home, Categorias, etc.) */}
+
+      {/* Main con padding-top igual a la altura del header para que no lo tape */}
+      <main className="flex-grow pt-20 bg-slate-50">
+        <Outlet />
       </main>
+
+      {/* Footer */}
       <Footer />
+
+      {/* Botón flotante de WhatsApp */}
+      <WhatsappButton phone="5491123456789" message="Hola, tengo una consulta sobre el producto." />
     </div>
   );
 }

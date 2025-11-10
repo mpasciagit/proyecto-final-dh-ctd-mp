@@ -1,240 +1,172 @@
-import { useSearchParams, Link } from "react-router-dom";
-import { Calendar, MapPin, Car, Users, Filter, X, Settings, Briefcase } from "lucide-react";
+// 📂 src/pages/Productos.jsx
 import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { Calendar, MapPin, Car, Users, Filter, X } from "lucide-react";
+
+import StepProgressBar from "../components/StepProgressBar";
+import { reservationSteps } from "../config/steps";
 import { FavoriteButton } from "../components";
 import { ProductListSkeleton } from "../components/LoadingSkeletons";
 import ProductoCaracteristicas from "../components/ProductoCaracteristicas";
-import { useDebouncedValue } from "../utils/optimizationUtils";
-import productService from "../services/productService";
-import categoryService from "../services/categoryService";
 
+import {
+  setProduct,
+  setCategory,
+  setDates,
+  setPickupLocation,
+  setDropoffLocation,
+} from "../redux/slices/reservationSlice";
+import {
+  fetchProducts,
+  fetchProductsByCategory,
+} from "../redux/slices/productSlice";
+import { fetchCategories } from "../redux/slices/categorySlice";
+
+// === Componente principal ===
 export default function Productos() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [productos, setProductos] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [categorias, setCategorias] = useState([]);
-  
-  // Extraer parámetros de búsqueda
-  const location = searchParams.get("location");
-  const vehicleType = searchParams.get("vehicleType");
+
+  // --- Redux state ---
+  const { items: productos, loading: productsLoading, error: productsError } = useSelector(
+    (state) => state.products
+  );
+  const { items: categorias } = useSelector((state) => state.category);
+  const reservation = useSelector((state) => state.reservation);
+
+  // --- Restaurar filtros de búsqueda previos ---
+  const location = searchParams.get("location") || reservation.pickupLocation || "";
+  const vehicleType =
+    searchParams.get("vehicleType") || reservation.selectedCategory || "";
   const passengers = parseInt(searchParams.get("passengers")) || 0;
-  const startDate = searchParams.get("startDate");
-  const endDate = searchParams.get("endDate");
-  const categoria = searchParams.get("categoria"); // Para compatibilidad con navegación por categorías
+  const startDate =
+    searchParams.get("startDate") ||
+    (reservation.selectedDates?.start
+      ? new Date(reservation.selectedDates.start).toISOString().split("T")[0]
+      : null);
+  const endDate =
+    searchParams.get("endDate") ||
+    (reservation.selectedDates?.end
+      ? new Date(reservation.selectedDates.end).toISOString().split("T")[0]
+      : null);
+  const categoria = searchParams.get("categoria") || reservation.selectedCategory || "";
 
-  // Cargar datos del backend
+  // --- Fetch inicial ---
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // 📂 Cargar categorías primero (siempre necesario)
-        const categoriasData = await categoryService.getAllCategories();
-        setCategorias(categoriasData);
-        
-        let productosData = [];
-        
-        // 🎯 Si hay filtro por categoría, usar endpoint específico
-        if (categoria) {
-          console.log('🔍 Filtrando por categoría:', categoria);
-          // Si categoria es un número (ID), usarlo directamente
-          const categoriaId = Number(categoria);
-          if (!isNaN(categoriaId)) {
-            productosData = await productService.getProductsByCategory(categoriaId);
-            console.log('✅ Productos de categoría cargados:', productosData);
-          } else {
-            // Buscar el ID de la categoría por nombre (compatibilidad)
-            const categoriaObj = categoriasData.find(c => 
-              c.nombre.toLowerCase() === categoria.toLowerCase()
-            );
-            if (categoriaObj) {
-              productosData = await productService.getProductsByCategory(categoriaObj.id);
-              console.log('✅ Productos de categoría cargados:', productosData);
-            } else {
-              console.warn('❌ Categoría no encontrada:', categoria);
-              productosData = [];
-            }
-          }
-        } else {
-          // 📋 Si no hay filtro por categoría, cargar todos los productos
-          console.log('📋 Cargando todos los productos...');
-          productosData = await productService.getAllProducts();
-        }
-        
-        // 🖼️ Cargar imágenes para cada producto
-        console.log('🖼️ Cargando imágenes para productos...');
-        const productosConImagenes = await Promise.all(
-          productosData.map(async (producto) => {
-            try {
-              const imagenes = await productService.getProductImages(producto.id);
-              return {
-                ...producto,
-                imagenes: imagenes || []
-              };
-            } catch (error) {
-              console.error(`Error al cargar imágenes del producto ${producto.id}:`, error);
-              return {
-                ...producto,
-                imagenes: []
-              };
-            }
-          })
-        );
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
-        setProductos(productosConImagenes);
-        
-        // Debug: mostrar estructura de datos
-        console.log('🚗 Productos cargados con imágenes:', productosConImagenes);
-        console.log('🚗 Primer producto estructura:', productosConImagenes[0]);
-        console.log('�️ Imágenes del primer producto:', productosConImagenes[0]?.imagenes);
-        console.log('📂 Categorías disponibles:', categoriasData);
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError('Error al cargar los productos. Por favor, intenta nuevamente.');
-      } finally {
-        setLoading(false);
+  useEffect(() => {
+    if (categoria) {
+      const categoriaObj = categorias.find((cat) => cat.nombre === categoria);
+      if (categoriaObj) {
+        dispatch(fetchProductsByCategory(categoriaObj.id));
       }
-    };
+    } else {
+      dispatch(fetchProducts());
+    }
+  }, [categoria, categorias, dispatch]);
 
-    fetchData();
-  }, [categoria]); // 🔄 Recargar cuando cambie el filtro de categoría
+  // --- Control de error global ---
+  useEffect(() => {
+    if (productsError) setError(productsError);
+  }, [productsError]);
 
-  // Aplicar filtros
-  let productosFiltrados = productos;
+  // --- Filtro dinámico ---
+  let productosFiltrados = productos || [];
 
-  console.log('🔍 Parámetros de filtrado recibidos:');
-  console.log('  - categoria:', categoria);
-  console.log('  - vehicleType:', vehicleType);
-  console.log('  - location:', location);
-  console.log('  - passengers:', passengers);
-
-  // 📝 NOTA: Si hay filtro por categoría, los productos ya vienen filtrados del backend
-  // Solo aplicamos filtros adicionales (ubicación, pasajeros, etc.)
-
-  if (location) {
-    productosFiltrados = productosFiltrados.filter(p => 
-      p.ciudad?.toLowerCase().includes(location.toLowerCase()) ||
-      p.ubicacion?.toLowerCase().includes(location.toLowerCase())
-    );
-    console.log('🏙️ Después de filtrar por ubicación:', productosFiltrados.length);
-  }
+  //if (location) {
+  //  productosFiltrados = productosFiltrados.filter(
+  //    (p) =>
+  //      p.ciudad?.toLowerCase().includes(location.toLowerCase()) ||
+  //      p.ubicacion?.toLowerCase().includes(location.toLowerCase())
+  //  );
+  //}
 
   if (vehicleType) {
-    console.log('🚗 Filtrando por vehicleType:', vehicleType);
-    console.log('🚗 Productos antes del filtro:', productosFiltrados.length);
-    productosFiltrados = productosFiltrados.filter(p => {
-      const categoriaComparar = p.categoria?.nombre?.toLowerCase() || p.categoria?.toLowerCase();
-      console.log(`  - Producto "${p.nombre}" tiene categoría: "${categoriaComparar}" vs "${vehicleType.toLowerCase()}"`);
-      return categoriaComparar === vehicleType.toLowerCase();
-    });
-    console.log('🚗 Después de filtrar por vehicleType:', productosFiltrados.length);
-  }
-
-  // 📂 No filtrar por categoría aquí si ya se filtró en el backend
-  if (categoria) {
-    console.log('📂 ✅ Productos ya filtrados por categoría en backend');
+    const categoriaObj = categorias.find((cat) => cat.nombre === vehicleType);
+    if (categoriaObj) {
+      productosFiltrados = productosFiltrados.filter(
+        (p) =>
+          p.categoriaId === categoriaObj.id ||
+          p.categoria === categoriaObj.nombre
+      );
+    } else if (vehicleType !== "") {
+      productosFiltrados = [];
+    }
   }
 
   if (passengers > 0) {
-    productosFiltrados = productosFiltrados.filter(p => 
-      (p.pasajeros || p.capacidadPasajeros) >= passengers
+    productosFiltrados = productosFiltrados.filter(
+      (p) => (p.pasajeros || p.capacidadPasajeros) >= passengers
     );
   }
 
-  // Función para limpiar filtros
   const clearFilters = () => {
     setSearchParams({});
   };
 
-  // Función para obtener el nombre legible del tipo de vehículo
-  const getVehicleTypeName = (type) => {
-    const types = {
-      'sedan': 'Sedán',
-      'suv': 'SUV',
-      'pickup': 'Pick-up',
-      'hatchback': 'Hatchback',
-      'coupe': 'Coupé',
-      'convertible': 'Convertible'
-    };
-    return types[type] || type;
+  const handleImageError = (e) => {
+    e.target.style.display = "none";
   };
 
-  // Verificar si hay filtros activos
-  const hasActiveFilters = location || vehicleType || categoria || passengers > 0 || startDate || endDate;
+  // --- Seleccionar producto ---
+  const handleSelectProduct = (producto) => {
+    // Guardar producto seleccionado en Redux
+    dispatch(setProduct(producto));
+    // Mantener categoría y fechas en Redux si existen
+    if (vehicleType) dispatch(setCategory(vehicleType));
+    if (startDate && endDate)
+      dispatch(setDates({ start: startDate, end: endDate }));
+    if (location) dispatch(setPickupLocation(location));
+    navigate(`/producto/${producto.id}`);
+  };
 
+  const hasActiveFilters =
+    location || vehicleType || categoria || passengers > 0 || startDate || endDate;
+
+  // --- Render ---
   return (
     <section className="max-w-7xl mx-auto px-6 py-10">
-      
-      {/* Header con título y filtros activos */}
+      {/* Paso 2 del flujo */}
+      <StepProgressBar
+  steps={reservationSteps}
+        activeStep={1}
+        onStepClick={(idx) => {
+          if (idx === 0) navigate("/");
+        }}
+      />
+
+      {/* Header */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-slate-900 mb-4 text-center">
-          Vehículos Disponibles
+          Selecciona un Vehículo
         </h2>
-        
-        {/* Mostrar filtros activos */}
-        {hasActiveFilters && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex flex-wrap items-center gap-4 mb-3">
-              <Filter className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-semibold text-blue-800">Filtros aplicados:</span>
-              
-              {location && (
-                <div className="flex items-center gap-1 bg-blue-100 px-3 py-1 rounded-full text-sm">
-                  <MapPin className="w-3 h-3" />
-                  {location}
-                </div>
-              )}
-              
-              {(vehicleType || categoria) && (
-                <div className="flex items-center gap-1 bg-blue-100 px-3 py-1 rounded-full text-sm">
-                  <Car className="w-3 h-3" />
-                  {getVehicleTypeName(vehicleType || categoria)}
-                </div>
-              )}
-              
-              {passengers > 0 && (
-                <div className="flex items-center gap-1 bg-blue-100 px-3 py-1 rounded-full text-sm">
-                  <Users className="w-3 h-3" />
-                  {passengers}+ pasajeros
-                </div>
-              )}
-              
-              {startDate && endDate && (
-                <div className="flex items-center gap-1 bg-blue-100 px-3 py-1 rounded-full text-sm">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
-                </div>
-              )}
-            </div>
-            
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              <X className="w-4 h-4" />
-              Limpiar filtros
-            </button>
-          </div>
-        )}
 
-        {/* Contador de resultados */}
-        {!loading && (
+
+        {!productsLoading && (
           <p className="text-center text-gray-600 mb-6">
-            {productosFiltrados.length === 0 
+            {productosFiltrados.length === 0
               ? "No se encontraron vehículos que coincidan con tu búsqueda"
-              : `Mostrando ${productosFiltrados.length} ${productosFiltrados.length === 1 ? 'vehículo' : 'vehículos'}`
-            }
+              : categoria
+                ? `Mostrando ${productosFiltrados.length} ${
+                    productosFiltrados.length === 1 ? "vehículo" : "vehículos"
+                  } de la categoría ${categoria}`
+                : `Mostrando ${productosFiltrados.length} ${
+                    productosFiltrados.length === 1 ? "vehículo" : "vehículos"
+                  }`}
           </p>
         )}
       </div>
 
-      {/* Manejo de errores */}
+      {/* Error global */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-center">
           <p className="text-red-800">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
           >
@@ -244,81 +176,65 @@ export default function Productos() {
       )}
 
       {/* Grid de productos */}
-      {loading ? (
+      {productsLoading ? (
         <ProductListSkeleton count={8} />
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {productosFiltrados.map((producto) => (
-          <div
-            key={producto.id}
-            className="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-shadow group relative"
-          >
-            {/* Botón de favoritos superpuesto */}
-            <div className="absolute top-3 right-3 z-10">
-              <FavoriteButton 
-                product={producto}
-                variant="solid"
-                size="default"
-              />
-            </div>
-            
-            {/* Link que envuelve la imagen y contenido principal */}
-            <Link to={`/producto/${producto.id}`} className="block">
-              <div className="h-48 w-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                {producto.imagenes?.[0]?.url || producto.imagen ? (
-                  <img
-                    src={producto.imagenes[0].url || producto.imagen}
-                    alt={producto.nombre}
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onLoad={() => {
-                      console.log(`✅ Backend imagen producto OK: ${producto.nombre}`);
-                    }}
-                    onError={(e) => {
-                      console.error(`❌ BACKEND FALLO - Imagen producto: ${producto.nombre}`);
-                      e.target.style.backgroundColor = '#fee2e2';
-                      e.target.style.border = '2px solid #dc2626';
-                    }}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full w-full bg-gray-100 text-gray-500 border-2 border-gray-300">
-                    <div className="text-center">
-                      <p className="text-2xl">📷</p>
-                      <p className="text-xs">Sin imagen</p>
-                      <p className="text-xs">en backend</p>
-                    </div>
-                  </div>
-                )}
+            <div
+              key={producto.id}
+              className="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-shadow group relative"
+            >
+              {/* Favorito */}
+              <div className="absolute top-3 right-3 z-10">
+                <FavoriteButton product={producto} variant="solid" size="default" />
               </div>
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
-                  {producto.nombre}
-                </h3>
-                <p className="text-sm text-gray-500 capitalize mb-3">
-                  {producto.categoriaNombre || producto.categoria || 'Sin categoría'}
-                </p>
-                
-                {/* Características reales del Backend */}
-                <ProductoCaracteristicas productoId={producto.id} />
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-blue-600">
-                    ${producto.precio || producto.precioBase || 0}/día
-                  </span>
-                  <span className="text-sm text-blue-600 group-hover:underline">
-                    Ver detalles →
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </div>
-        ))}
-        </div>
-      )}
 
-      {!loading && productosFiltrados.length === 0 && (
-        <p className="text-center text-slate-600 mt-8">
-          No se encontraron vehículos para esta categoría.
-        </p>
+              {/* Click en producto */}
+              <button
+                type="button"
+                className="block w-full text-left cursor-pointer"
+                onClick={() => handleSelectProduct(producto)}
+              >
+                <div className="h-48 w-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                  {producto.imagenes?.[0]?.url || producto.imagen ? (
+                    <img
+                      src={producto.imagenes?.[0]?.url || producto.imagen}
+                      alt={producto.nombre}
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={handleImageError}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full w-full bg-gray-100 text-gray-500 border-2 border-gray-300">
+                      <div className="text-center">
+                        <p className="text-2xl">📷</p>
+                        <p className="text-xs">Sin imagen</p>
+                        <p className="text-xs">en backend</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
+                    {producto.nombre}
+                  </h3>
+                  <p className="text-sm text-gray-500 capitalize mb-3">
+                    {producto.categoriaNombre ||
+                      producto.categoria ||
+                      "Sin categoría"}
+                  </p>
+                  <ProductoCaracteristicas productoId={producto.id} />
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-bold text-blue-600">
+                      ${producto.precio || producto.precioBase || 0}/día
+                    </span>
+                  </div>
+                </div>
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </section>
   );

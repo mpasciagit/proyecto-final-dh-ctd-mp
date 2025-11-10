@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Header/Logo';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -11,7 +12,6 @@ const Register = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: ''
   });
@@ -44,12 +44,6 @@ const Register = () => {
       newErrors.email = 'El email no es válido';
     }
 
-    // Validación teléfono
-    if (!formData.phone) {
-      newErrors.phone = 'El teléfono es requerido';
-    } else if (!/^[\+]?[0-9\s\-\(\)]{10,}$/.test(formData.phone)) {
-      newErrors.phone = 'El teléfono no es válido';
-    }
 
     // Validación password
     if (!formData.password) {
@@ -92,12 +86,12 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     const { confirmPassword, ...userData } = formData;
     const result = await register(userData);
-    
+
     if (result.success) {
       navigate('/');
     } else {
@@ -106,30 +100,29 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-blue-600 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        {/* Header con botón de volver */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Volver
-          </button>
-          
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Crear Cuenta
-            </h1>
-            <p className="text-gray-600">
-              Regístrate para acceder a todas las funciones
-            </p>
+        {/* Header */}
+        <div className="mb-4">
+          <div className="flex flex-row w-full items-center justify-between">
+            {/* Bloque izquierdo: logo */}
+            <div className="self-start ml-10 mt-2 scale-160">
+              <Logo />
+            </div>
+            {/* Bloque derecho: título y subtítulo */}
+            <div className="flex flex-col items-start text-left ml-auto">
+              <h1 className="text-2xl font-bold text-white mb-2">
+                Crear Cuenta
+              </h1>
+              <p className="text-white leading-tight">
+                Regístrate para acceder<br />a todas las funciones
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Formulario de Registro */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-4">
           {/* Error general */}
           {registerError && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -153,9 +146,8 @@ const Register = () => {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                      errors.firstName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${errors.firstName ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     placeholder="Juan"
                   />
                 </div>
@@ -175,9 +167,8 @@ const Register = () => {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                    errors.lastName ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${errors.lastName ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   placeholder="Pérez"
                 />
                 {errors.lastName && (
@@ -199,69 +190,13 @@ const Register = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   placeholder="tu@email.com"
                 />
               </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Teléfono */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Teléfono
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="+1234567890"
-                />
-              </div>
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
               )}
             </div>
 
@@ -278,15 +213,14 @@ const Register = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -300,7 +234,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer mb-2"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -311,12 +245,19 @@ const Register = () => {
           </form>
 
           {/* Enlaces adicionales */}
-          <div className="mt-6 text-center space-y-2">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Volver
+            </button>
             <Link
               to="/login"
-              className="text-green-600 hover:text-green-800 font-medium"
+              className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors cursor-pointer font-normal whitespace-nowrap text-base"
             >
-              ¿Ya tienes cuenta? Inicia sesión aquí
+              ¿Ya tienes una cuenta? Inicia sesión aquí
             </Link>
           </div>
         </div>
