@@ -6,11 +6,13 @@ import com.dh.ctd.mp.proyecto_final.repository.PermisoRepository;
 import com.dh.ctd.mp.proyecto_final.repository.RolRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Component
+@Order(1)
 @RequiredArgsConstructor
 public class RolPermisoInitializer implements CommandLineRunner {
 
@@ -19,7 +21,7 @@ public class RolPermisoInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Asegúrate de que los roles existen
+
         Rol superAdmin = rolRepository.findByNombre("SUPER_ADMIN")
                 .orElseGet(() -> rolRepository.save(new Rol("SUPER_ADMIN")));
         Rol admin = rolRepository.findByNombre("ADMIN")
@@ -30,8 +32,11 @@ public class RolPermisoInitializer implements CommandLineRunner {
         // Mapea los permisos a cada rol según la tabla (resumido y sin duplicados)
         Map<String, Set<String>> permisosPorRol = new HashMap<>();
         permisosPorRol.put("SUPER_ADMIN", new HashSet<>(Arrays.asList(
+                "ADMIN",
                 "USUARIO:CREAR", "USUARIO:BUSCAR", "USUARIO:LISTAR", "USUARIO:MODIFICAR", "USUARIO:ELIMINAR",
                 "ROL:CREAR", "ROL:BUSCAR", "ROL:LISTAR", "ROL:MODIFICAR", "ROL:ELIMINAR",
+                "PERMISO:CREAR", "PERMISO:BUSCAR", "PERMISO:LISTAR", "PERMISO:MODIFICAR", "PERMISO:ELIMINAR",
+                "ROLPERMISO:CREAR", "ROLPERMISO:BUSCAR", "ROLPERMISO:LISTAR", "ROLPERMISO:MODIFICAR", "ROLPERMISO:ELIMINAR",
                 "REVIEW:CREAR", "REVIEW:BUSCAR", "REVIEW:LISTAR", "REVIEW:ELIMINAR",
                 "RESERVA:CREAR", "RESERVA:BUSCAR", "RESERVA:LISTAR", "RESERVA:MODIFICAR", "RESERVA:ELIMINAR",
                 "PRODUCTO:CREAR", "PRODUCTO:BUSCAR", "PRODUCTO:LISTAR", "PRODUCTO:MODIFICAR", "PRODUCTO:ELIMINAR",
@@ -41,7 +46,7 @@ public class RolPermisoInitializer implements CommandLineRunner {
                 "CARACTERISTICA:CREAR", "CARACTERISTICA:BUSCAR", "CARACTERISTICA:LISTAR", "CARACTERISTICA:MODIFICAR", "CARACTERISTICA:ELIMINAR"
         )));
         permisosPorRol.put("ADMIN", new HashSet<>(Arrays.asList(
-                "USUARIO:BUSCAR",
+                "ADMIN", "USUARIO:BUSCAR",
                 "REVIEW:CREAR", "REVIEW:BUSCAR", "REVIEW:LISTAR",
                 "RESERVA:CREAR", "RESERVA:BUSCAR", "RESERVA:LISTAR", "RESERVA:MODIFICAR", "RESERVA:ELIMINAR",
                 "PRODUCTO:CREAR", "PRODUCTO:BUSCAR", "PRODUCTO:LISTAR", "PRODUCTO:MODIFICAR",

@@ -1,3 +1,3 @@
 export default function Dashboard() {
-  return <h1>Dashboard del Panel</h1>;
+  return <h1>Tablero de Control</h1>;
 }

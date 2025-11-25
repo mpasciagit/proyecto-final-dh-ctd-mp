@@ -21,5 +21,13 @@ public class AuthenticationResponse {
     private String nombre;         // Nombre del usuario
     private String apellido;       // Apellido del usuario
     private String email;          // Email del usuario
-    private List<String> roles;    // Roles asignados al usuario
+    private List<Rol> roles;       // Roles asignados al usuario con sus IDs
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Rol {
+        private Long id;           // ID del rol
+        private String nombre;     // Nombre del rol
+    }
 }

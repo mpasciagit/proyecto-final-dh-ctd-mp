@@ -35,18 +35,16 @@ export const ReservationProvider = ({ children }) => {
     try {
       setIsLoading(true);
       const userReservations = await reservationService.getReservationsByUser(user.id);
-      
-      // 🔧 FIX: Parsear fechas del backend a objetos Date para el frontend
-      const reservationsWithParsedDates = userReservations.map(reservation => ({
+      // Plan A: Mantener fechas como strings (YYYY-MM-DD)
+      const reservationsWithStringDates = userReservations.map(reservation => ({
         ...reservation,
-        startDate: reservation.fechaInicio ? new Date(reservation.fechaInicio + 'T00:00:00') : null,
-        endDate: reservation.fechaFin ? new Date(reservation.fechaFin + 'T00:00:00') : null,
-        // Mantener campos originales por compatibilidad
-        fechaInicio: reservation.fechaInicio,
-        fechaFin: reservation.fechaFin
+        startDate: reservation.fechaInicio || '',
+        endDate: reservation.fechaFin || '',
+        // Para compatibilidad, mantener también los campos originales
+        fechaInicio: reservation.fechaInicio || '',
+        fechaFin: reservation.fechaFin || ''
       }));
-      
-      setReservations(reservationsWithParsedDates);
+      setReservations(reservationsWithStringDates);
     } catch (error) {
       console.error('❌ Error al cargar reservas:', error);
       setReservations([]);
@@ -124,15 +122,14 @@ export const ReservationProvider = ({ children }) => {
 
       // 📡 Si no está en memoria, consultar al backend
       const reservation = await reservationService.getReservationById(reservationId);
-      
-      // 🔧 FIX: Parsear fechas también para reserva individual
+      // Plan A: Mantener fechas como strings
       if (reservation) {
         return {
           ...reservation,
-          startDate: reservation.fechaInicio ? new Date(reservation.fechaInicio + 'T00:00:00') : null,
-          endDate: reservation.fechaFin ? new Date(reservation.fechaFin + 'T00:00:00') : null,
-          fechaInicio: reservation.fechaInicio,
-          fechaFin: reservation.fechaFin
+          startDate: reservation.fechaInicio || '',
+          endDate: reservation.fechaFin || '',
+          fechaInicio: reservation.fechaInicio || '',
+          fechaFin: reservation.fechaFin || ''
         };
       }
       return reservation;
@@ -144,30 +141,37 @@ export const ReservationProvider = ({ children }) => {
 
   // Obtener reservas activas (confirmadas y futuras)
   const getActiveReservations = () => {
-    const now = new Date();
-    return reservations.filter(reservation => 
-      reservation.status === 'confirmed' && 
-      new Date(reservation.endDate) >= now
+    // Plan A: Comparar fechas como strings (YYYY-MM-DD)
+    const todayStr = new Date().toISOString().split('T')[0];
+    return reservations.filter(reservation =>
+      reservation.status === 'confirmed' &&
+      reservation.endDate >= todayStr
     );
   };
 
   // Obtener historial completo
   const getReservationHistory = () => {
-    return reservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Plan A: Ordenar por string (YYYY-MM-DD) si createdAt es string, si no, mantener lógica
+    return reservations.sort((a, b) => {
+      if (a.createdAt && b.createdAt) {
+        return b.createdAt.localeCompare(a.createdAt);
+      }
+      return 0;
+    });
   };
 
   // Verificar disponibilidad de vehículo en fechas específicas
   const checkVehicleAvailability = (vehicleId, startDate, endDate) => {
-    const conflictingReservations = reservations.filter(reservation => 
-      reservation.vehicleId === vehicleId && 
+    // Plan A: Comparar fechas como strings (YYYY-MM-DD)
+    const conflictingReservations = reservations.filter(reservation =>
+      reservation.vehicleId === vehicleId &&
       reservation.status === 'confirmed' &&
       (
-        (new Date(startDate) >= new Date(reservation.startDate) && new Date(startDate) < new Date(reservation.endDate)) ||
-        (new Date(endDate) > new Date(reservation.startDate) && new Date(endDate) <= new Date(reservation.endDate)) ||
-        (new Date(startDate) <= new Date(reservation.startDate) && new Date(endDate) >= new Date(reservation.endDate))
+        (startDate >= reservation.startDate && startDate < reservation.endDate) ||
+        (endDate > reservation.startDate && endDate <= reservation.endDate) ||
+        (startDate <= reservation.startDate && endDate >= reservation.endDate)
       )
     );
-
     return conflictingReservations.length === 0;
   };
 
@@ -181,13 +185,12 @@ export const ReservationProvider = ({ children }) => {
 
   // Calcular precio total
   const calculateTotalPrice = (dailyPrice, startDate, endDate, additionalServices = []) => {
+    // Plan A: Parsear solo para cálculo, no para guardar
     const start = new Date(startDate);
     const end = new Date(endDate);
     const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    
     const basePrice = dailyPrice * days;
     const servicesPrice = additionalServices.reduce((total, service) => total + service.price, 0);
-    
     return {
       days,
       basePrice,

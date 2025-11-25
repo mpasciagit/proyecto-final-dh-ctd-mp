@@ -20,7 +20,8 @@ const ReservationConfirmation = () => {
 
   // Genera un código de confirmación tipo CRAAAAMMDDNNNN
   function generateConfirmationCode(date, id) {
-    const d = new Date(date);
+    // Forzar fecha local para evitar desfase de día
+    const d = new Date(date + (date && !date.includes('T') ? 'T00:00:00' : ''));
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -169,8 +170,8 @@ const ReservationConfirmation = () => {
                     <div>
                       <p className="text-sm text-gray-600">Período de alquiler</p>
                       <p className="font-medium">
-                        {new Date(reservation.startDate).toLocaleDateString()} -{' '}
-                        {new Date(reservation.endDate).toLocaleDateString()}
+                        {reservation.startDate ? new Date(reservation.startDate + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''} -{' '}
+                        {reservation.endDate ? new Date(reservation.endDate + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}
                       </p>
                       <p className="text-sm text-blue-600 font-semibold">
                         {reservation.totalDays} {reservation.totalDays === 1 ? 'día' : 'días'}

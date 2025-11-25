@@ -13,7 +13,8 @@ public interface PermisoRepository extends JpaRepository<Permiso, Long> {
 
     // Buscar permiso por nombre
     Optional<Permiso> findByNombre(String nombre);
-
     // Buscar varios permisos por nombre
     List<Permiso> findAllByNombreIn(Collection<String> nombres);
+
+    List<Permiso> findAllByRolesId(Long rolId);
 }

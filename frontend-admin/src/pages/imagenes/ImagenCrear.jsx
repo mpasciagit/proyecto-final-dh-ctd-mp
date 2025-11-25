@@ -4,7 +4,8 @@ import axios from "axios";
 
 export default function ImagenCrear({ onCreated } = {}) {
   const [url, setUrl] = useState("");
-  const [titulo, setTitulo] = useState("");
+  const [textoAlternativo, setTextoAlternativo] = useState("");
+  const [orden, setOrden] = useState(1);
   const [productoId, setProductoId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -12,7 +13,8 @@ export default function ImagenCrear({ onCreated } = {}) {
 
   const resetForm = () => {
     setUrl("");
-    setTitulo("");
+    setTextoAlternativo("");
+    setOrden(1);
     setProductoId("");
     setError("");
     setSuccess("");
@@ -23,7 +25,7 @@ export default function ImagenCrear({ onCreated } = {}) {
     setError("");
     setSuccess("");
 
-    if (!url.trim() || !titulo.trim() || !productoId.trim()) {
+    if (!url.trim() || !textoAlternativo.trim() || !productoId.trim() || orden === null || orden === "") {
       setError("Todos los campos son obligatorios.");
       return;
     }
@@ -33,9 +35,11 @@ export default function ImagenCrear({ onCreated } = {}) {
       const token = localStorage.getItem("token");
       const payload = {
         url: url.trim(),
-        titulo: titulo.trim(),
-        producto: { id: productoId.trim() },
+        textoAlternativo: textoAlternativo.trim(),
+        orden: Number(orden),
+        productoId: Number(productoId),
       };
+      // No incluir 'id' en el payload, el backend lo genera automáticamente
 
       const resp = await axios.post(
         "http://localhost:8080/api/imagenes",
@@ -88,6 +92,7 @@ export default function ImagenCrear({ onCreated } = {}) {
       <h2 style={{ marginTop: 0 }}>Crear Imagen</h2>
 
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem" }}>
+
         <label>
           URL de la imagen
           <input
@@ -101,13 +106,26 @@ export default function ImagenCrear({ onCreated } = {}) {
         </label>
 
         <label>
-          Título
+          Texto alternativo
           <input
             type="text"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
+            value={textoAlternativo}
+            onChange={(e) => setTextoAlternativo(e.target.value)}
             required
-            placeholder="Título de la imagen"
+            placeholder="Descripción de la imagen"
+            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
+          />
+        </label>
+
+        <label>
+          Orden Visual
+          <input
+            type="number"
+            value={orden}
+            min={1}
+            onChange={(e) => setOrden(e.target.value)}
+            required
+            placeholder="Orden visual de la imagen"
             style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
           />
         </label>

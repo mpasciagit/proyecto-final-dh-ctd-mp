@@ -1,19 +1,20 @@
 package com.dh.ctd.mp.proyecto_final.mapper;
 
-     import com.dh.ctd.mp.proyecto_final.dto.ProductoDTO;
-     import com.dh.ctd.mp.proyecto_final.dto.CaracteristicaDTO;
-     import com.dh.ctd.mp.proyecto_final.entity.Producto;
-     import com.dh.ctd.mp.proyecto_final.entity.Caracteristica;
-     import com.dh.ctd.mp.proyecto_final.entity.ProductoCaracteristica;
-     import com.dh.ctd.mp.proyecto_final.entity.Categoria;
-     import com.dh.ctd.mp.proyecto_final.dto.ImagenDTO;
-     import com.dh.ctd.mp.proyecto_final.entity.Imagen;
+import com.dh.ctd.mp.proyecto_final.dto.ProductoCaracteristicaDTO;
+import com.dh.ctd.mp.proyecto_final.dto.ProductoDTO;
+import com.dh.ctd.mp.proyecto_final.dto.CaracteristicaDTO;
+import com.dh.ctd.mp.proyecto_final.entity.Producto;
+import com.dh.ctd.mp.proyecto_final.entity.Caracteristica;
+import com.dh.ctd.mp.proyecto_final.entity.ProductoCaracteristica;
+import com.dh.ctd.mp.proyecto_final.entity.Categoria;
+import com.dh.ctd.mp.proyecto_final.dto.ImagenDTO;
+import com.dh.ctd.mp.proyecto_final.entity.Imagen;
 
-     import java.util.List;
-     import java.util.Set;
-     import java.util.stream.Collectors;
-     import java.util.ArrayList;
-     import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ProductoMapper {
 
@@ -36,18 +37,25 @@ public class ProductoMapper {
         }
 
         if (producto.getProductoCaracteristicas() != null) {
-            List<CaracteristicaDTO> caracteristicas = producto.getProductoCaracteristicas().stream()
-                    .map(pc -> CaracteristicaMapper.toDTO(pc.getCaracteristica()))
-                    .collect(Collectors.toList());
-            dto.setCaracteristicas(caracteristicas);
+            List<ProductoCaracteristicaDTO> productoCaracteristicas = producto.getProductoCaracteristicas().stream()
+                    .map(pc -> ProductoCaracteristicaDTO.builder()
+                            .id(pc.getId())
+                            .productoId(pc.getProducto().getId())
+                            .caracteristicaId(pc.getCaracteristica().getId())
+                            .caracteristicaNombre(pc.getCaracteristica().getNombre())
+                            .caracteristicaIconoUrl(pc.getCaracteristica().getIconoUrl())
+                            .valor(pc.getValor())
+                            .build())
+                    .toList();
+            dto.setProductoCaracteristica(productoCaracteristicas);
         } else {
-            dto.setCaracteristicas(new ArrayList<>());
+            dto.setProductoCaracteristica(new ArrayList<>());
         }
 
         if (producto.getImagenes() != null) {
             List<ImagenDTO> imagenes = producto.getImagenes().stream()
-                .map(ImagenMapper::toDTO)
-                .collect(Collectors.toList());
+                    .map(ImagenMapper::toDTO)
+                    .collect(Collectors.toList());
             dto.setImagenes(imagenes);
         } else {
             dto.setImagenes(new ArrayList<>());
@@ -56,8 +64,8 @@ public class ProductoMapper {
         return dto;
     }
 
-    // ProductoDTO -> Producto (solo setea ID de característica)
-    public static Producto toEntity(ProductoDTO dto) {
+    // ProductoDTO -> Producto
+    public static Producto toEntity(ProductoDTO dto, Categoria categoria) {
         if (dto == null) return null;
 
         Producto producto = new Producto();
@@ -68,24 +76,20 @@ public class ProductoMapper {
         producto.setReservable(dto.getReservable());
         producto.setCantidadTotal(dto.getCantidadTotal());
 
-        if (dto.getCategoriaId() != null) {
-            Categoria categoria = new Categoria();
-            categoria.setId(dto.getCategoriaId());
-            categoria.setNombre(dto.getCategoriaNombre());
-            producto.setCategoria(categoria);
-        }
+        // Asignar la categoría recuperada
+        producto.setCategoria(categoria);
 
-        if (dto.getCaracteristicas() != null) {
-            Set<ProductoCaracteristica> productoCaracteristicas = dto.getCaracteristicas().stream()
-                    .map(caracteristicaDTO -> {
+        if (dto.getProductoCaracteristica() != null) {
+            Set<ProductoCaracteristica> productoCaracteristicas = dto.getProductoCaracteristica().stream()
+                    .map(pcDTO -> {
                         ProductoCaracteristica pc = new ProductoCaracteristica();
                         pc.setProducto(producto);
 
-                        // Solo referenciamos ID
                         Caracteristica caracteristica = new Caracteristica();
-                        caracteristica.setId(caracteristicaDTO.getId());
+                        caracteristica.setId(pcDTO.getCaracteristicaId());
                         pc.setCaracteristica(caracteristica);
 
+                        pc.setValor(pcDTO.getValor());
                         return pc;
                     })
                     .collect(Collectors.toSet());

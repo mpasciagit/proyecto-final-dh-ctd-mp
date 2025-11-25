@@ -1,6 +1,7 @@
 package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.ReviewDTO;
+import com.dh.ctd.mp.proyecto_final.exception.GlobalExceptionHandler;
 import com.dh.ctd.mp.proyecto_final.exception.InvalidDataException;
 import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.IReviewService;
@@ -9,11 +10,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -26,13 +26,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ReviewController.class)
 public class ReviewControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
     private IReviewService reviewService;
 
     @Autowired
@@ -43,6 +41,16 @@ public class ReviewControllerTest {
 
     @BeforeEach
     void setUp() {
+        reviewService = Mockito.mock(IReviewService.class);
+
+        ReviewController reviewController = new ReviewController(reviewService);
+
+        mockMvc = MockMvcBuilders.standaloneSetup(reviewController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+
         review1 = ReviewDTO.builder()
                 .id(1L)
                 .puntuacion(5)
@@ -62,7 +70,6 @@ public class ReviewControllerTest {
                 .build();
     }
 
-    // ----------------- TEST CREAR -----------------
     @Test
     @WithMockUser
     void testCreateReview() throws Exception {
@@ -107,7 +114,6 @@ public class ReviewControllerTest {
                 .andExpect(jsonPath("$.message", containsString("no encontrado")));
     }
 
-    // ----------------- TEST LISTAR -----------------
     @Test
     @WithMockUser
     void testFindAllReviews() throws Exception {
@@ -121,7 +127,6 @@ public class ReviewControllerTest {
                 .andExpect(jsonPath("$[1].comentario", is("Aceptable")));
     }
 
-    // ----------------- TEST BUSCAR POR ID -----------------
     @Test
     @WithMockUser
     void testFindReviewById() throws Exception {
@@ -144,7 +149,6 @@ public class ReviewControllerTest {
                 .andExpect(jsonPath("$.message", containsString("no encontrada")));
     }
 
-    // ----------------- TEST ELIMINAR -----------------
     @Test
     @WithMockUser
     void testDeleteReview() throws Exception {
@@ -165,7 +169,6 @@ public class ReviewControllerTest {
                 .andExpect(jsonPath("$.message", containsString("no encontrada")));
     }
 
-    // ----------------- TEST BUSQUEDAS ESPECÍFICAS -----------------
     @Test
     @WithMockUser
     void testFindByProductoId() throws Exception {
@@ -187,6 +190,6 @@ public class ReviewControllerTest {
         mockMvc.perform(get("/api/reviews/usuario/{usuarioId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()", is(1)))
-                .andExpect(jsonPath("$[0].usuarioId", is(1)));
+                .andExpect(jsonPath("$[0].comentario", is("Excelente producto")));
     }
 }

@@ -23,9 +23,9 @@ const MisFavoritos = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("es-AR", {
-      day: "numeric",
-      month: "short",
+    return new Date(dateString + 'T00:00:00').toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
     });
   };

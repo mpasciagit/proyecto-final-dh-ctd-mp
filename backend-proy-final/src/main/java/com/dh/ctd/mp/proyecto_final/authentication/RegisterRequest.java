@@ -18,5 +18,4 @@ public class RegisterRequest {
     private String apellido;
     private String email;
     private String password;
-    private String rol; // Nombre del rol: "USER", "ADMIN", etc.
 }

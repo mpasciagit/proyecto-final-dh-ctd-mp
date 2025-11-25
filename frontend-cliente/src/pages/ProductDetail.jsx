@@ -52,10 +52,10 @@ export default function ProductDetail() {
   const [localStartDate, setLocalStartDate] = useState(() => {
     if (modoExploracion) {
       if (reservation?.selectedDates?.start) {
-        return new Date(reservation.selectedDates.start);
+        return new Date(reservation.selectedDates.start + 'T00:00:00');
       }
       if (location.state?.fechas?.start) {
-        return new Date(location.state.fechas.start);
+        return new Date(location.state.fechas.start + 'T00:00:00');
       }
     }
     return null;
@@ -64,10 +64,10 @@ export default function ProductDetail() {
   const [localEndDate, setLocalEndDate] = useState(() => {
     if (modoExploracion) {
       if (reservation?.selectedDates?.end) {
-        return new Date(reservation.selectedDates.end);
+        return new Date(reservation.selectedDates.end + 'T00:00:00');
       }
       if (location.state?.fechas?.end) {
-        return new Date(location.state.fechas.end);
+        return new Date(location.state.fechas.end + 'T00:00:00');
       }
     }
     return null;
@@ -101,9 +101,10 @@ export default function ProductDetail() {
   const handleCalendarConfirm = (range) => {
     setShowCalendarModal(false);
     setCalendarField(null);
-    // Actualizar fechas locales y redux
-    setLocalStartDate(range.startDate);
-    setLocalEndDate(range.endDate);
+    // Convertir strings a Date para el estado local
+    setLocalStartDate(range.startDate ? new Date(range.startDate + 'T00:00:00') : null);
+    setLocalEndDate(range.endDate ? new Date(range.endDate + 'T00:00:00') : null);
+    // Guardar en redux como string
     dispatch(setDates({ start: range.startDate, end: range.endDate }));
   };
 
@@ -142,12 +143,12 @@ export default function ProductDetail() {
   const startDate = modoExploracion
     ? localStartDate
     : reservation?.selectedDates?.start
-      ? new Date(reservation.selectedDates.start)
+      ? new Date(reservation.selectedDates.start + 'T00:00:00')
       : null;
   const endDate = modoExploracion
     ? localEndDate
     : reservation?.selectedDates?.end
-      ? new Date(reservation.selectedDates.end)
+      ? new Date(reservation.selectedDates.end + 'T00:00:00')
       : null;
 
   const diffDays =
@@ -195,8 +196,8 @@ export default function ProductDetail() {
       const payload = {
         userId: user.id,
         productId: product.id,
-        startDate: startDate ? startDate.toISOString().split("T")[0] : null,
-        endDate: endDate ? endDate.toISOString().split("T")[0] : null,
+        startDate: reservation?.selectedDates?.start || null,
+        endDate: reservation?.selectedDates?.end || null,
         pickupLocation: modoExploracion
           ? localPickupLocation
           : reservation.pickupLocation,
@@ -323,7 +324,7 @@ export default function ProductDetail() {
             </div>
 
             <ProductoCaracteristicas
-              productoId={product.id}
+              caracteristicas={product.productoCaracteristica}
               layout="grid"
               showTitle={true}
               maxItems={12}
@@ -365,7 +366,7 @@ export default function ProductDetail() {
                     readOnly
                     value={
                       localStartDate
-                        ? localStartDate.toLocaleDateString("es-AR")
+                        ? localStartDate.toLocaleDateString("es-AR", { day: '2-digit', month: '2-digit', year: 'numeric' })
                         : "No seleccionada"
                     }
                     className="w-full border rounded px-3 py-2 bg-white cursor-pointer"
@@ -382,7 +383,7 @@ export default function ProductDetail() {
                     readOnly
                     value={
                       startDate
-                        ? startDate.toLocaleDateString("es-AR")
+                        ? startDate.toLocaleDateString("es-AR", { day: '2-digit', month: '2-digit', year: 'numeric' })
                         : "No seleccionada"
                     }
                     className="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
@@ -432,7 +433,7 @@ export default function ProductDetail() {
                     readOnly
                     value={
                       localEndDate
-                        ? localEndDate.toLocaleDateString("es-AR")
+                        ? localEndDate.toLocaleDateString("es-AR", { day: '2-digit', month: '2-digit', year: 'numeric' })
                         : "No seleccionada"
                     }
                     className="w-full border rounded px-3 py-2 bg-white cursor-pointer"
@@ -449,7 +450,7 @@ export default function ProductDetail() {
                     readOnly
                     value={
                       endDate
-                        ? endDate.toLocaleDateString("es-AR")
+                        ? endDate.toLocaleDateString("es-AR", { day: '2-digit', month: '2-digit', year: 'numeric' })
                         : "No seleccionada"
                     }
                     className="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"

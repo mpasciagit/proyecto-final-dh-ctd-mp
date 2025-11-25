@@ -1,11 +1,25 @@
 
 import { useState } from "react";
+import RolListar from "../roles/RolListar.jsx";
 import { useCrudActions } from "../../hooks/useCrudActions";
 import ModalConfirmacion from "../../components/ModalConfirmacion";
 import "../../styles/tabla-admin.css";
 
 
 export default function UsuarioListar({ modoEdicion = false }) {
+  // Obtener roles disponibles para el select
+  const { data: roles } = useCrudActions("/api/roles");
+  const [sortConfig, setSortConfig] = useState({ key: 'rol', asc: true });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, asc: !prev.asc };
+      } else {
+        return { key, asc: true };
+      }
+    });
+  };
   const {
     data: usuarios,
     loading,
@@ -54,6 +68,25 @@ export default function UsuarioListar({ modoEdicion = false }) {
   if (loading) return <p>Cargando usuarios...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
+  // Ordenar usuarios por la columna seleccionada
+  const usuariosOrdenados = [...usuarios];
+  usuariosOrdenados.sort((a, b) => {
+    let aValue, bValue;
+    if (sortConfig.key === 'rol') {
+      aValue = (a.rol?.nombre || '').toLowerCase();
+      bValue = (b.rol?.nombre || '').toLowerCase();
+    } else if (sortConfig.key === 'email') {
+      aValue = (a.email || '').toLowerCase();
+      bValue = (b.email || '').toLowerCase();
+    } else if (sortConfig.key === 'id') {
+      aValue = a.id;
+      bValue = b.id;
+    }
+    if (aValue < bValue) return sortConfig.asc ? -1 : 1;
+    if (aValue > bValue) return sortConfig.asc ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div>
       <h2>Listado de Usuarios</h2>
@@ -64,15 +97,42 @@ export default function UsuarioListar({ modoEdicion = false }) {
           <thead>
             <tr>
               {modoEdicion && <th>Action</th>}
-              <th>ID</th>
+              <th>
+                ID
+                <button
+                  style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }}
+                  onClick={() => handleSort('id')}
+                  title="Ordenar por ID"
+                >
+                  ▲▼
+                </button>
+              </th>
               <th>Nombre</th>
               <th>Apellido</th>
-              <th>Email</th>
-              <th>Rol</th>
+              <th>
+                Email
+                <button
+                  style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }}
+                  onClick={() => handleSort('email')}
+                  title="Ordenar por Email"
+                >
+                  ▲▼
+                </button>
+              </th>
+              <th>
+                Rol
+                <button
+                  style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }}
+                  onClick={() => handleSort('rol')}
+                  title="Ordenar por Rol"
+                >
+                  ▲▼
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {usuarios.map((usr) => (
+            {usuariosOrdenados.map((usr) => (
               <tr key={usr.id}>
                 {modoEdicion && (
                   <td className="action-cell">
@@ -136,16 +196,22 @@ export default function UsuarioListar({ modoEdicion = false }) {
 
                 <td>
                   {editandoId === usr.id ? (
-                    <input
-                      type="text"
-                      value={editData.rol?.nombre || ""}
-                      onChange={(e) =>
+                    <select
+                      value={editData.rol?.id || ""}
+                      onChange={e => {
+                        const selectedId = Number(e.target.value);
+                        const selectedRol = roles.find(r => r.id === selectedId);
                         setEditData({
                           ...editData,
-                          rol: { ...editData.rol, nombre: e.target.value },
-                        })
-                      }
-                    />
+                          rol: selectedRol ? { id: selectedRol.id, nombre: selectedRol.nombre } : null,
+                        });
+                      }}
+                    >
+                      <option value="">Seleccione rol</option>
+                      {roles && roles.map(r => (
+                        <option key={r.id} value={r.id}>{r.nombre}</option>
+                      ))}
+                    </select>
                   ) : (
                     usr.rol?.nombre || "-"
                   )}

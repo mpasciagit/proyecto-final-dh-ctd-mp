@@ -18,7 +18,5 @@ public class RolDTO {
     private String nombre;
     private String descripcion;
 
-    // Opcional: si querés exponer solo cantidad de usuarios o IDs
-    // private List<Long> usuarioIds;
 }
 

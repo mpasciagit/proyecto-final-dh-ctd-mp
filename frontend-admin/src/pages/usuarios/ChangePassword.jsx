@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import '../../styles/CreateUserForm.css';
+import '../../styles/ChangePassword.css';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,6 +11,7 @@ export default function ChangePassword() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -35,7 +38,7 @@ export default function ChangePassword() {
     setLoading(true);
     try {
       const payload = {
-        currentPassword,
+        oldPassword: currentPassword,
         newPassword,
       };
 
@@ -70,23 +73,14 @@ export default function ChangePassword() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 500,
-        margin: '2rem auto',
-        padding: '1.5rem',
-        border: '1px solid #ddd',
-        borderRadius: 8,
-        background: 'white',
-      }}
-    >
+    <div className="change-password-container">
       <h2>Cambiar contraseña</h2>
 
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '0.75rem' }}>
+      <form onSubmit={handleSubmit} className="create-admin-form">
         <label>
-          Contraseña actual
+          Actual contraseña
           <input
-            type="password"
+            type={showPasswords ? "text" : "password"}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             required
@@ -95,7 +89,7 @@ export default function ChangePassword() {
         <label>
           Nueva contraseña
           <input
-            type="password"
+            type={showPasswords ? "text" : "password"}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
@@ -104,19 +98,32 @@ export default function ChangePassword() {
         <label>
           Confirmar nueva contraseña
           <input
-            type="password"
+            type={showPasswords ? "text" : "password"}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
         </label>
 
-        <button type="submit" disabled={loading} style={{ padding: '0.5rem 1rem' }}>
-          {loading ? 'Cambiando...' : 'Cambiar contraseña'}
-        </button>
+        <div className="change-password-actions">
+          <div style={{ minWidth: 0, flex: 1, display: 'flex' }}>
+            <div style={{ width: '84px' }}></div>
+            <label className="change-password-checkbox">
+              <input
+                type="checkbox"
+                checked={showPasswords}
+                onChange={e => setShowPasswords(e.target.checked)}                
+              />
+              Mostrar contraseñas
+            </label>
+          </div>
+          <button type="submit" disabled={loading} className="change-password-button">
+            {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
+          </button>
+        </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {message && <p style={{ color: 'green' }}>{message}</p>}
+  {error && <p className="change-password-error">{error}</p>}
+  {message && <p className="change-password-success">{message}</p>}
       </form>
     </div>
   );

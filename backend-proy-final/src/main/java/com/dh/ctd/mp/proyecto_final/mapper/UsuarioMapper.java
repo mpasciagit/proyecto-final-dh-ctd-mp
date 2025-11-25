@@ -17,7 +17,6 @@ public class UsuarioMapper {
                 .email(usuario.getEmail())
                 .nombre(usuario.getNombre())
                 .apellido(usuario.getApellido())
-                .password(usuario.getPassword())
                 .rol(
                         UsuarioDTO.RolDTO.builder()
                                 .id(usuario.getRol().getId())
@@ -36,7 +35,6 @@ public class UsuarioMapper {
         usuario.setEmail(usuarioDTO.getEmail());
         usuario.setNombre(usuarioDTO.getNombre());
         usuario.setApellido(usuarioDTO.getApellido());
-        usuario.setPassword(usuarioDTO.getPassword());
 
         if (usuarioDTO.getRol() != null) {
             Rol rol = new Rol();
@@ -48,4 +46,3 @@ public class UsuarioMapper {
         return usuario;
     }
 }
-

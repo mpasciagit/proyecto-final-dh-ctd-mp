@@ -2,7 +2,9 @@ package com.dh.ctd.mp.proyecto_final.mapper;
 
 import com.dh.ctd.mp.proyecto_final.dto.PermisoDTO;
 import com.dh.ctd.mp.proyecto_final.entity.Permiso;
+import org.springframework.stereotype.Component;
 
+@Component
 public class PermisoMapper {
 
     public static PermisoDTO toDTO(Permiso permiso) {

@@ -11,7 +11,15 @@ export default function Header() {
     <header className="bg-slate-900 text-white shadow-lg fixed top-0 left-0 right-0 z-50 w-full">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-4">
         {/* Logo clickeable - redirije a home */}
-        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link
+          to="/"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          onClick={e => {
+            localStorage.removeItem("reservationState");
+            window.location.href = "/";
+            e.preventDefault();
+          }}
+        >
           <Logo />
         </Link>
 

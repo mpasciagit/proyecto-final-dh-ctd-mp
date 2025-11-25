@@ -30,6 +30,10 @@ public class ImagenServiceImpl implements IImagenService {
             throw new InvalidDataException("La URL de la imagen no puede estar vacía");
         }
 
+        if (imagenDTO.getId() != null) {
+            throw new InvalidDataException("El id no debe ser enviado al crear una nueva imagen.");
+        }
+
         Producto producto = null;
         if (imagenDTO.getProductoId() != null) {
             producto = productoRepository.findById(imagenDTO.getProductoId())

@@ -224,7 +224,7 @@ export default function Productos() {
                       producto.categoria ||
                       "Sin categoría"}
                   </p>
-                  <ProductoCaracteristicas productoId={producto.id} />
+                  <ProductoCaracteristicas caracteristicas={producto.productoCaracteristica} />
                   <div className="flex justify-between items-center">
                     <span className="text-xl font-bold text-blue-600">
                       ${producto.precio || producto.precioBase || 0}/día

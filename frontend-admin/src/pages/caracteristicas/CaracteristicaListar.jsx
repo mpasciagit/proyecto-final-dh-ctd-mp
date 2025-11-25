@@ -52,6 +52,7 @@ export default function CaracteristicaListar({ modoEdicion = false }) {
               {modoEdicion && <th>Action</th>}
               <th>ID</th>
               <th>Nombre</th>
+              <th>Descripción</th>
               <th>Ícono</th>
             </tr>
           </thead>
@@ -94,13 +95,31 @@ export default function CaracteristicaListar({ modoEdicion = false }) {
                   {editandoId === carac.id ? (
                     <input
                       type="text"
-                      value={editData.icono}
+                      value={editData.descripcion}
                       onChange={(e) =>
-                        setEditData({ ...editData, icono: e.target.value })
+                        setEditData({ ...editData, descripcion: e.target.value })
                       }
                     />
                   ) : (
-                    carac.icono
+                    carac.descripcion
+                  )}
+                </td>
+
+                <td style={{ textAlign: "center" }}>
+                  {editandoId === carac.id ? (
+                    <input
+                      type="text"
+                      value={editData.iconoUrl}
+                      onChange={(e) =>
+                        setEditData({ ...editData, iconoUrl: e.target.value })
+                      }
+                    />
+                  ) : (
+                    carac.iconoUrl ? (
+                      <img src={carac.iconoUrl} alt={carac.nombre} style={{ width: 28, height: 28, objectFit: "contain" }} />
+                    ) : (
+                      "-"
+                    )
                   )}
                 </td>
               </tr>

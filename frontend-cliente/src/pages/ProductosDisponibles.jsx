@@ -142,7 +142,7 @@ export default function ProductosDisponibles() {
                   <p className="text-sm text-gray-500 capitalize mb-3">
                     {producto.categoriaNombre || categoriaNombre || "Sin categoría"}
                   </p>
-                  <ProductoCaracteristicas productoId={producto.id} />
+                  <ProductoCaracteristicas caracteristicas={producto.productoCaracteristica} />
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xl font-bold text-blue-600">
                       ${producto.precio || producto.precioBase || 0}/día
@@ -170,7 +170,7 @@ export default function ProductosDisponibles() {
       <div className="mt-10 flex justify-center">
         <button
           onClick={clearFilters}
-          className="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300 transition cursor-pointer"
+          className="px-6 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg border border-gray-400 transition cursor-pointer"
         >
           Volver a categorías
         </button>

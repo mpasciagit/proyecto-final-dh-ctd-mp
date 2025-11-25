@@ -1,4 +1,4 @@
-// src/pages/productos/ProductoListar.jsx
+
 import { useState } from "react";
 import "../../styles/tabla-admin.css";
 import { useCrudActions } from "../../hooks/useCrudActions";
@@ -10,6 +10,34 @@ export default function ProductoListar({ modoEdicion = false }) {
   const [editData, setEditData] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [productoAEliminar, setProductoAEliminar] = useState(null);
+
+  // Estado de ordenamiento
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  // Función para ordenar los datos
+  const getSortedProducts = () => {
+    if (!sortConfig.key) return productos;
+    const sorted = [...productos].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+      if (typeof aValue === "string") aValue = aValue.toLowerCase();
+      if (typeof bValue === "string") bValue = bValue.toLowerCase();
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  };
+
+  // Cambiar el orden al hacer clic
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: "asc" };
+    });
+  };
 
   const handleEditClick = (p) => {
     setEditandoId(p.id);
@@ -69,37 +97,43 @@ export default function ProductoListar({ modoEdicion = false }) {
           <thead>
             <tr>
               {modoEdicion && <th>Action</th>}
-              <th>ID</th>
-              <th>CANTIDAD TOTAL</th>
-              <th>DESCRIPCIÓN</th>
-              <th>NOMBRE</th>
-              <th>PRECIO</th>
-              <th>RESERVABLE</th>
-              <th>CATEGORÍA ID</th>
+              <th>ID
+                <button style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }} onClick={() => handleSort("id")} title="Ordenar por ID">▲▼</button>
+              </th>
+              <th>CATEGORÍA
+                <button style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }} onClick={() => handleSort("categoriaId")} title="Ordenar por Categoría">▲▼</button>
+              </th>
+              <th>NOMBRE
+                <button style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }} onClick={() => handleSort("nombre")} title="Ordenar por Nombre">▲▼</button>
+              </th>
+              <th>DESCRIPCIÓN
+                <button style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }} onClick={() => handleSort("descripcion")} title="Ordenar por Descripción">▲▼</button>
+              </th>
+              <th>RESERVABLE
+                <button style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }} onClick={() => handleSort("reservable")} title="Ordenar por Reservable">▲▼</button>
+              </th>
+              <th>CANTIDAD
+                <button style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }} onClick={() => handleSort("cantidadTotal")} title="Ordenar por Cantidad">▲▼</button>
+              </th>
+              <th>PRECIO
+                <button style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: "1em", color: "inherit" }} onClick={() => handleSort("precio")} title="Ordenar por Precio">▲▼</button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {productos.map((p) => (
+            {getSortedProducts().map((p) => (
               <tr key={p.id}>
                 {modoEdicion && (
                   <td className="action-cell">
                     {editandoId === p.id ? (
                       <>
-                        <button title="Guardar" onClick={() => handleSave(p.id)}>
-                          ✔
-                        </button>
-                        <button title="Cancelar" onClick={handleCancel}>
-                          ✖
-                        </button>
+                        <button title="Guardar" onClick={() => handleSave(p.id)}>✔</button>
+                        <button title="Cancelar" onClick={handleCancel}>✖</button>
                       </>
                     ) : (
                       <>
-                        <button title="Editar" onClick={() => handleEditClick(p)}>
-                          ✏
-                        </button>
-                        <button title="Eliminar" onClick={() => handleDeleteClick(p)}>
-                          ❌
-                        </button>
+                        <button title="Editar" onClick={() => handleEditClick(p)}>✏</button>
+                        <button title="Eliminar" onClick={() => handleDeleteClick(p)}>❌</button>
                       </>
                     )}
                   </td>
@@ -111,25 +145,11 @@ export default function ProductoListar({ modoEdicion = false }) {
                   {editandoId === p.id ? (
                     <input
                       type="number"
-                      value={editData.cantidadTotal ?? ""}
-                      onChange={(e) =>
-                        setEditData({ ...editData, cantidadTotal: Number(e.target.value) })
-                      }
+                      value={editData.categoriaId ?? ""}
+                      onChange={(e) => setEditData({ ...editData, categoriaId: Number(e.target.value) })}
                     />
                   ) : (
-                    p.cantidadTotal ?? p.cantidad_total ?? ""
-                  )}
-                </td>
-
-                <td>
-                  {editandoId === p.id ? (
-                    <input
-                      type="text"
-                      value={editData.descripcion ?? ""}
-                      onChange={(e) => setEditData({ ...editData, descripcion: e.target.value })}
-                    />
-                  ) : (
-                    p.descripcion ?? ""
+                    p.categoriaNombre ?? p.categoria?.nombre ?? ""
                   )}
                 </td>
 
@@ -148,13 +168,12 @@ export default function ProductoListar({ modoEdicion = false }) {
                 <td>
                   {editandoId === p.id ? (
                     <input
-                      type="number"
-                      step="0.01"
-                      value={editData.precio ?? ""}
-                      onChange={(e) => setEditData({ ...editData, precio: Number(e.target.value) })}
+                      type="text"
+                      value={editData.descripcion ?? ""}
+                      onChange={(e) => setEditData({ ...editData, descripcion: e.target.value })}
                     />
                   ) : (
-                    p.precio ?? ""
+                    p.descripcion ?? ""
                   )}
                 </td>
 
@@ -174,13 +193,24 @@ export default function ProductoListar({ modoEdicion = false }) {
                   {editandoId === p.id ? (
                     <input
                       type="number"
-                      value={editData.categoriaId ?? ""}
-                      onChange={(e) =>
-                        setEditData({ ...editData, categoriaId: Number(e.target.value) })
-                      }
+                      value={editData.cantidadTotal ?? ""}
+                      onChange={(e) => setEditData({ ...editData, cantidadTotal: Number(e.target.value) })}
                     />
                   ) : (
-                    p.categoriaId ?? p.categoria_id ?? (p.categoria?.id ?? "")
+                    p.cantidadTotal ?? p.cantidad_total ?? ""
+                  )}
+                </td>
+
+                <td>
+                  {editandoId === p.id ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editData.precio ?? ""}
+                      onChange={(e) => setEditData({ ...editData, precio: Number(e.target.value) })}
+                    />
+                  ) : (
+                    p.precio ?? ""
                   )}
                 </td>
               </tr>

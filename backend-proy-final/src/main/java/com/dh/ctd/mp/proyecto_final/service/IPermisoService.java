@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface IPermisoService {
-    Permiso guardar(Permiso permiso);
+    Permiso crear(Permiso permiso);
     Optional<Permiso> buscarPorId(Long id);
     Optional<Permiso> buscarPorNombre(String nombre);
     List<Permiso> listarTodos();

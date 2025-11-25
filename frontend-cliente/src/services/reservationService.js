@@ -84,20 +84,18 @@ class ReservationService {
   // ✅ Crear nueva reserva
   async createReservation(reservationData) {
     try {
-      // Formatear datos para el backend
+      // Formatear datos para el backend (solo string YYYY-MM-DD)
       const formattedData = {
-        fechaInicio: new Date(reservationData.startDate).toISOString().split('T')[0], // Formato YYYY-MM-DD
-        fechaFin: new Date(reservationData.endDate).toISOString().split('T')[0],     // Formato YYYY-MM-DD
+        fechaInicio: reservationData.startDate, // string YYYY-MM-DD
+        fechaFin: reservationData.endDate,      // string YYYY-MM-DD
         usuarioId: reservationData.userId,
         productoId: reservationData.productId,
         estado: reservationData.status || 'PENDIENTE'
       };
-      
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESERVAS.BASE, {
         method: 'POST',
         body: JSON.stringify(formattedData)
       });
-      
       return response;
     } catch (error) {
       console.error('Error al crear reserva:', error);

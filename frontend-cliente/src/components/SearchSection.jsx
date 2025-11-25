@@ -29,12 +29,8 @@ const SearchSection = () => {
     location: reservation.pickupLocation || '',
     dropoffLocation: reservation.dropoffLocation || '',
     vehicleType: reservation.selectedCategory || '',
-    startDate: reservation.selectedDates?.start
-      ? new Date(reservation.selectedDates.start)
-      : null,
-    endDate: reservation.selectedDates?.end
-      ? new Date(reservation.selectedDates.end)
-      : null,
+    startDate: reservation.selectedDates?.start || '',
+    endDate: reservation.selectedDates?.end || '',
   });
 
   // Estado para controlar el modal de calendario de rango
@@ -65,7 +61,7 @@ const SearchSection = () => {
   const handleCalendarConfirm = (range) => {
     setShowCalendarModal(false);
     setCalendarField(null);
-    // Actualizar fechas en searchData y redux
+    // Actualizar fechas en searchData y redux (ambas como string)
     setSearchData((prev) => ({
       ...prev,
       startDate: range.startDate,
@@ -122,9 +118,9 @@ const SearchSection = () => {
     if (searchData.vehicleType)
       params.append('vehicleType', searchData.vehicleType);
     if (searchData.startDate)
-      params.append('startDate', searchData.startDate.toISOString().split('T')[0]);
+      params.append('startDate', searchData.startDate);
     if (searchData.endDate)
-      params.append('endDate', searchData.endDate.toISOString().split('T')[0]);
+      params.append('endDate', searchData.endDate);
 
     navigate(`/productos?${params.toString()}`);
   };
@@ -170,7 +166,7 @@ const SearchSection = () => {
                   readOnly
                   value={
                     searchData.startDate
-                      ? searchData.startDate.toLocaleDateString("es-AR")
+                      ? new Date(searchData.startDate + 'T00:00:00').toLocaleDateString("es-AR", { day: '2-digit', month: '2-digit', year: 'numeric' })
                       : "Seleccionar fecha de retiro"
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white cursor-pointer"
@@ -216,7 +212,7 @@ const SearchSection = () => {
                   readOnly
                   value={
                     searchData.endDate
-                      ? searchData.endDate.toLocaleDateString("es-AR")
+                      ? new Date(searchData.endDate + 'T00:00:00').toLocaleDateString("es-AR", { day: '2-digit', month: '2-digit', year: 'numeric' })
                       : "Seleccionar fecha de devolución"
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white cursor-pointer"
@@ -228,8 +224,8 @@ const SearchSection = () => {
               onClose={handleCalendarClose}
               onConfirm={handleCalendarConfirm}
               initialRange={{
-                startDate: searchData.startDate || new Date(),
-                endDate: searchData.endDate || new Date(),
+                startDate: searchData.startDate || '',
+                endDate: searchData.endDate || '',
                 key: "selection"
               }}
             />

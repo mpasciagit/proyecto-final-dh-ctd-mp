@@ -45,7 +45,6 @@ class UsuarioControllerTest {
                 .email("test@example.com")
                 .nombre("Juan")
                 .apellido("Perez")
-                .password("1234")
                 .rol(new UsuarioDTO.RolDTO(1L, "USER"))
                 .build();
     }

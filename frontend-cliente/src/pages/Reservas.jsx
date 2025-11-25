@@ -39,6 +39,7 @@ export default function Reservas() {
 
   const allReservations = getReservationHistory();
   const [enrichedReservations, setEnrichedReservations] = useState([]);
+  const [isEnriching, setIsEnriching] = useState(false);
   const [userReviews, setUserReviews] = useState([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewReserva, setReviewReserva] = useState(null);
@@ -67,6 +68,7 @@ export default function Reservas() {
   // Enriquecer reservas con nombre e imagen del producto si faltan
   useEffect(() => {
     const enrichReservations = async () => {
+      setIsEnriching(true);
       const promises = allReservations.map(async (reservation) => {
         // Si ya tiene nombre e imagen, no hace falta enriquecer
         if (reservation.vehicleImage && reservation.vehicleName) return reservation;
@@ -90,6 +92,7 @@ export default function Reservas() {
       });
       const enriched = await Promise.all(promises);
       setEnrichedReservations(enriched);
+      setIsEnriching(false);
     };
     enrichReservations();
   }, [allReservations]);
@@ -216,7 +219,12 @@ export default function Reservas() {
       </div>
 
       {/* Lista de reservas */}
-      {filteredReservations.length === 0 ? (
+      {isLoading || isEnriching ? (
+        <div className="text-center py-12">
+          <Car className="w-12 h-12 text-gray-300 mx-auto mb-4 animate-pulse" />
+          <h3 className="text-lg font-medium text-gray-500 mb-2">Cargando reservas...</h3>
+        </div>
+      ) : filteredReservations.length === 0 ? (
         <div className="text-center py-12">
           <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -260,7 +268,7 @@ export default function Reservas() {
                     <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
                       <Calendar className="w-4 h-4 text-gray-400" />
                       <span>
-                        {new Date(reservation.startDate).toLocaleDateString()} - {new Date(reservation.endDate).toLocaleDateString()}
+                        {reservation.startDate ? new Date(reservation.startDate + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''} - {reservation.endDate ? new Date(reservation.endDate + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}
                       </span>
                     </div>
                     {/* Botón Ver Detalles */}

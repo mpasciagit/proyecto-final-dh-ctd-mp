@@ -3,14 +3,16 @@ import axios from "axios";
 
 export default function CaracteristicaCrear({ onCreated } = {}) {
   const [nombre, setNombre] = useState("");
-  const [icono, setIcono] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [iconoUrl, setIconoUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const resetForm = () => {
     setNombre("");
-    setIcono("");
+    setDescripcion("");
+    setIconoUrl("");
     setError("");
     setSuccess("");
   };
@@ -30,7 +32,8 @@ export default function CaracteristicaCrear({ onCreated } = {}) {
       const token = localStorage.getItem("token");
       const payload = {
         nombre: nombre.trim(),
-        icono: icono.trim() || null,
+        descripcion: descripcion.trim(),
+        iconoUrl: iconoUrl.trim(),
       };
 
       const resp = await axios.post(
@@ -88,21 +91,32 @@ export default function CaracteristicaCrear({ onCreated } = {}) {
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             required
-            placeholder="Ej: Aire Acondicionado"
+            placeholder="Ej: Combustible"
             style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
           />
         </label>
         <label>
-          Ícono
+          Descripción
           <input
             type="text"
-            value={icono}
-            onChange={(e) => setIcono(e.target.value)}
-            placeholder="Ej: fa-snowflake"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            required
+            placeholder="Ej: Tipo de Combustible"
+            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
+          />
+        </label>
+        <label>
+          Ícono URL
+          <input
+            type="text"
+            value={iconoUrl}
+            onChange={(e) => setIconoUrl(e.target.value)}
+            placeholder="https://ejemplo.com/iconos/surtidor.svg"
             style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
           />
           <small style={{ color: '#6b7280', display: 'block', marginTop: '0.25rem' }}>
-            Usá el nombre de la clase de FontAwesome o similar.
+            Pegá la URL de la imagen del ícono (PNG, SVG, etc).
           </small>
         </label>
         <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.5rem" }}>

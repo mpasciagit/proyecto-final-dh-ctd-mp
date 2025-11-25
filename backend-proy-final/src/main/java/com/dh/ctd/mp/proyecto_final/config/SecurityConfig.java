@@ -54,7 +54,12 @@ public class SecurityConfig {
                                 "/api/reviews/{id}",
                                 "/api/reviews",
                                 "/api/reviews/producto/{productoId}",
-                                "/api/reviews/usuario/{usuarioId}"
+                                "/api/reviews/usuario/{usuarioId}",
+                                "/api/admin/allowed-roles",
+                                "/api/usuarios/email-rol/{email}",
+                                "/api/rol-permiso/rol/{rolId}",
+                                "/api/rol-permiso/rol/{rolId}/permiso/admin",
+                                "/api/rol-permiso/public/rol/{rolId}/permiso/admin"
                         ).permitAll()
                         // 🔒 El resto requiere autenticación con JWT
                         .anyRequest().authenticated()

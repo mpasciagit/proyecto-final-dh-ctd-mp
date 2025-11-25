@@ -2,19 +2,20 @@ package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.CategoriaDTO;
 import com.dh.ctd.mp.proyecto_final.exception.DuplicateResourceException;
+import com.dh.ctd.mp.proyecto_final.exception.GlobalExceptionHandler;
 import com.dh.ctd.mp.proyecto_final.exception.InvalidDataException;
 import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.ICategoriaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,16 +27,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CategoriaController.class)
 public class CategoriaControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Mock
     private ICategoriaService categoriaService;
 
-    @Autowired
     private ObjectMapper objectMapper;
 
     private CategoriaDTO categoria1;
@@ -43,6 +41,13 @@ public class CategoriaControllerTest {
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
+        CategoriaController categoriaController = new CategoriaController(categoriaService);
+        mockMvc = MockMvcBuilders.standaloneSetup(categoriaController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        objectMapper = new ObjectMapper();
+
         categoria1 = CategoriaDTO.builder()
                 .id(1L)
                 .nombre("Autos")

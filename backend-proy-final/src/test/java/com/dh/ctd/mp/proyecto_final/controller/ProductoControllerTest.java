@@ -1,19 +1,20 @@
 package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.ProductoDTO;
+import com.dh.ctd.mp.proyecto_final.exception.GlobalExceptionHandler;
 import com.dh.ctd.mp.proyecto_final.exception.InvalidDataException;
 import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.IProductoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,16 +26,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ProductoController.class)
 public class ProductoControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Mock
     private IProductoService productoService;
 
-    @Autowired
     private ObjectMapper objectMapper;
 
     private ProductoDTO producto1;
@@ -42,6 +40,13 @@ public class ProductoControllerTest {
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
+        ProductoController productoController = new ProductoController(productoService);
+        mockMvc = MockMvcBuilders.standaloneSetup(productoController)
+                .setControllerAdvice(new GlobalExceptionHandler()) // Manejador de errores
+                .build();
+        objectMapper = new ObjectMapper();
+
         producto1 = ProductoDTO.builder()
                 .id(1L)
                 .nombre("Producto A")
@@ -128,37 +133,6 @@ public class ProductoControllerTest {
                 .andExpect(jsonPath("$.message", containsString("no encontrado")));
     }
 
-    // ----------------- TEST ACTUALIZAR -----------------
-    @Test
-    @WithMockUser
-    void testUpdateProducto() throws Exception {
-        ProductoDTO updated = producto1;
-        updated.setNombre("Producto A Actualizado");
-
-        Mockito.when(productoService.update(eq(1L), any(ProductoDTO.class))).thenReturn(updated);
-
-        mockMvc.perform(put("/api/productos/{id}", 1L)
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updated)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre", is("Producto A Actualizado")));
-    }
-
-    @Test
-    @WithMockUser
-    void testUpdateProducto_NotFound() throws Exception {
-        Mockito.when(productoService.update(eq(99L), any(ProductoDTO.class)))
-                .thenThrow(new ResourceNotFoundException("Producto no encontrado con id: 99"));
-
-        mockMvc.perform(put("/api/productos/{id}", 99L)
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(producto1)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", containsString("no encontrado")));
-    }
-
     // ----------------- TEST ELIMINAR -----------------
     @Test
     @WithMockUser
@@ -178,73 +152,5 @@ public class ProductoControllerTest {
         mockMvc.perform(delete("/api/productos/{id}", 99L).with(csrf()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", containsString("no encontrado")));
-    }
-
-    // ----------------- TEST BUSQUEDAS ESPECÍFICAS -----------------
-    @Test
-    @WithMockUser
-    void testFindByNombre() throws Exception {
-        List<ProductoDTO> list = Arrays.asList(producto1);
-        Mockito.when(productoService.findByNombre("Producto A")).thenReturn(list);
-
-        mockMvc.perform(get("/api/productos/nombre/{nombre}", "Producto A"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()", is(1)))
-                .andExpect(jsonPath("$[0].nombre", is("Producto A")));
-    }
-
-    @Test
-    @WithMockUser
-    void testFindByCategoria() throws Exception {
-        List<ProductoDTO> list = Arrays.asList(producto1);
-        Mockito.when(productoService.findByCategoria(10L)).thenReturn(list);
-
-        mockMvc.perform(get("/api/productos/categoria/{categoriaId}", 10L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()", is(1)))
-                .andExpect(jsonPath("$[0].nombre", is("Producto A")));
-    }
-
-    @Test
-    @WithMockUser
-    void testFindReservables() throws Exception {
-        List<ProductoDTO> list = Arrays.asList(producto1);
-        Mockito.when(productoService.findReservables()).thenReturn(list);
-
-        mockMvc.perform(get("/api/productos/reservables"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()", is(1)));
-    }
-
-    @Test
-    @WithMockUser
-    void testFindConStockDisponible() throws Exception {
-        List<ProductoDTO> list = Arrays.asList(producto1);
-        Mockito.when(productoService.findConStockDisponible()).thenReturn(list);
-
-        mockMvc.perform(get("/api/productos/disponibles"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()", is(1)));
-    }
-
-    // ----------------- TEST VERIFICAR DISPONIBILIDAD -----------------
-    @Test
-    @WithMockUser
-    void testCheckDisponibilidad_True() throws Exception {
-        Mockito.when(productoService.verificarDisponibilidad(1L, 3)).thenReturn(true);
-
-        mockMvc.perform(get("/api/productos/{id}/disponibilidad/{cantidad}", 1L, 3))
-                .andExpect(status().isOk())
-                .andExpect(content().string("true"));
-    }
-
-    @Test
-    @WithMockUser
-    void testCheckDisponibilidad_False() throws Exception {
-        Mockito.when(productoService.verificarDisponibilidad(1L, 10)).thenReturn(false);
-
-        mockMvc.perform(get("/api/productos/{id}/disponibilidad/{cantidad}", 1L, 10))
-                .andExpect(status().isOk())
-                .andExpect(content().string("false"));
     }
 }

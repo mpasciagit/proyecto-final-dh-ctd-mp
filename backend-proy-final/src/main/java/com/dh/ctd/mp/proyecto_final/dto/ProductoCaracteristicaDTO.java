@@ -11,5 +11,7 @@ public class ProductoCaracteristicaDTO {
     private Long id;
     private Long productoId;
     private Long caracteristicaId;
+    private String caracteristicaNombre;
+    private String caracteristicaIconoUrl;
     private String valor;
 }

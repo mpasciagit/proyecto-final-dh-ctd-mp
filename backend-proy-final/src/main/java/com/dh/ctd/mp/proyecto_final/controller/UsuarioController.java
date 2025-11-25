@@ -9,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "usuarios", description = "Gestión de Usuarios")
 @RestController
@@ -46,7 +48,7 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.findAll());
     }
 
-    // ----------------- ACTUALIZAR -----------------
+    // ----------------- MODIFICAR -----------------
     @PreAuthorize("hasAuthority('USUARIO:MODIFICAR')")
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioDTO> actualizarUsuario(@PathVariable Long id,
@@ -87,6 +89,7 @@ public class UsuarioController {
     }
 
     // ----------------- RESETEAR PASSWORD -----------------
+
     /**
      * Permite al usuario cambiar su contraseña o a un administrador generar una nueva temporal.
      * Si el request trae una nueva contraseña → cambio normal del usuario.
@@ -109,5 +112,38 @@ public class UsuarioController {
                     java.util.Map.of("message", "Contraseña temporal generada y enviada al usuario.")
             );
         }
+    }
+
+    // ----------------- VALIDAR EMAIL Y ROLES -----------------
+
+    /**
+     * Devuelve si un usuario existe y el rol asociado a su cuenta.
+     * Uso desde el Panel de Administración.
+     */
+    @GetMapping("/email-rol/{email}")
+    public ResponseEntity<Map<String, Object>> validarEmailYRol(@PathVariable String email) {
+        Map<String, Object> response = new HashMap<>();
+
+        UsuarioDTO usuarioDTO = usuarioService.findByEmail(email);
+
+        if (usuarioDTO == null) {
+            response.put("exists", false);
+            response.put("rol", null);
+            return ResponseEntity.ok(response);
+        }
+
+        Map<String, Object> rolInfo = new HashMap<>();
+        if (usuarioDTO.getRol() != null) {
+            rolInfo.put("id", usuarioDTO.getRol().getId());
+            rolInfo.put("nombre", usuarioDTO.getRol().getNombre().toUpperCase());
+        } else {
+            rolInfo.put("id", null);
+            rolInfo.put("nombre", "SIN_ROL");
+        }
+
+        response.put("exists", true);
+        response.put("rol", rolInfo);
+
+        return ResponseEntity.ok(response);
     }
 }

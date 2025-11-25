@@ -1,19 +1,20 @@
 package com.dh.ctd.mp.proyecto_final.controller;
 
 import com.dh.ctd.mp.proyecto_final.dto.ImagenDTO;
+import com.dh.ctd.mp.proyecto_final.exception.GlobalExceptionHandler;
 import com.dh.ctd.mp.proyecto_final.exception.InvalidDataException;
 import com.dh.ctd.mp.proyecto_final.exception.ResourceNotFoundException;
 import com.dh.ctd.mp.proyecto_final.service.IImagenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,16 +25,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ImagenController.class)
 public class ImagenControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Mock
     private IImagenService imagenService;
 
-    @Autowired
     private ObjectMapper objectMapper;
 
     private ImagenDTO imagen1;
@@ -41,6 +39,13 @@ public class ImagenControllerTest {
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
+        ImagenController imagenController = new ImagenController(imagenService);
+        mockMvc = MockMvcBuilders.standaloneSetup(imagenController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        objectMapper = new ObjectMapper();
+
         imagen1 = new ImagenDTO(1L, "http://ejemplo.com/imagen1.jpg", "Imagen 1", 1, 100L);
         imagen2 = new ImagenDTO(2L, "http://ejemplo.com/imagen2.jpg", "Imagen 2", 2, 100L);
     }

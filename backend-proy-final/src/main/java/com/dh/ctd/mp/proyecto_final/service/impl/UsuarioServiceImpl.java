@@ -70,7 +70,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     }
 
     // 4️⃣ Actualizar usuario
-    @Override
+   @Override
     public UsuarioDTO update(UsuarioDTO usuarioDTO) {
         if (usuarioDTO.getId() == null) {
             throw new IllegalArgumentException("El id del usuario no puede ser nulo");
@@ -86,6 +86,10 @@ public class UsuarioServiceImpl implements IUsuarioService {
         }
 
         Usuario usuario = usuarioMapper.toEntity(usuarioDTO);
+
+        // Conservar el password actual si no está presente en el DTO
+        usuario.setPassword(existente.getPassword());
+
         usuario.setId(existente.getId());
         Usuario actualizado = usuarioRepository.save(usuario);
         return usuarioMapper.toDTO(actualizado);

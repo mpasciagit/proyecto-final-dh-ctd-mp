@@ -11,6 +11,10 @@ import com.dh.ctd.mp.proyecto_final.repository.RolRepository;
 import com.dh.ctd.mp.proyecto_final.repository.UsuarioRepository;
 import com.dh.ctd.mp.proyecto_final.service.EmailService;
 import com.dh.ctd.mp.proyecto_final.service.IUsuarioService;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -50,8 +54,8 @@ public class AuthenticationService {
         usuario.setEmail(request.getEmail());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        Rol rol = rolRepository.findByNombre(request.getRol())
-                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: " + request.getRol()));
+        com.dh.ctd.mp.proyecto_final.entity.Rol rol = rolRepository.findByNombre("USER")
+                .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: USER"));
         usuario.setRol(rol);
 
         Usuario saved = usuarioRepository.save(usuario);
@@ -69,8 +73,9 @@ public class AuthenticationService {
                 .token(jwtToken)
                 .usuarioId(saved.getId())
                 .nombre(saved.getNombre())
+                .apellido(saved.getApellido())
                 .email(saved.getEmail())
-                .roles(List.of(saved.getRol().getNombre()))
+                .roles(List.of(new AuthenticationResponse.Rol(rol.getId(), rol.getNombre())))
                 .build();
     }
 
@@ -92,7 +97,7 @@ public class AuthenticationService {
                 .nombre(usuario.getNombre())
                 .apellido(usuario.getApellido())
                 .email(usuario.getEmail())
-                .roles(List.of(usuario.getRol().getNombre()))
+                .roles(List.of(new AuthenticationResponse.Rol(usuario.getRol().getId(), usuario.getRol().getNombre())))
                 .build();
     }
 
@@ -148,5 +153,13 @@ public class AuthenticationService {
 
         tokenEntity.setUsed(true);
         tokenRepository.save(tokenEntity);
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Rol {
+        private Long id;           // ID del rol
+        private String nombre;     // Nombre del rol
     }
 }

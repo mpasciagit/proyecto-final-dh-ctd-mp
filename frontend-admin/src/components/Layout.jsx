@@ -1,7 +1,8 @@
+import Header from "./Header.jsx";
 import { Outlet, NavLink } from "react-router-dom";
 import { useState } from "react";
 import UserInfo from "./UserInfo.jsx";
-import CreateAdminForm from "../pages/usuarios/CreateAdminForm.jsx";
+import CreateUserForm from "../pages/usuarios/CreateUserForm.jsx";
 import ChangePassword from "../pages/usuarios/ChangePassword.jsx";
 import CategoriaListar from "../pages/categorias/CategoriaListar.jsx";
 import CategoriaCrear from "../pages/categorias/CategoriaCrear.jsx";
@@ -10,6 +11,7 @@ import ProductoCrear from "../pages/productos/ProductoCrear.jsx";
 import CaracteristicaListar from "../pages/caracteristicas/CaracteristicaListar.jsx";
 import CaracteristicaCrear from "../pages/caracteristicas/CaracteristicaCrear.jsx";
 import ImagenListar from "../pages/imagenes/ImagenListar.jsx";
+import ImagenCrear from "../pages/imagenes/ImagenCrear.jsx";
 import ReservaListar from "../pages/reservas/ReservaListar.jsx";
 import ReservaCrear from "../pages/reservas/ReservaCrear.jsx";
 import FavoritoListar from "../pages/favoritos/FavoritoListar.jsx";
@@ -17,9 +19,10 @@ import FavoritoCrear from "../pages/favoritos/FavoritoCrear.jsx";
 import ReviewListar from "../pages/reviews/ReviewListar.jsx";
 import ReviewCrear from "../pages/reviews/ReviewCrear.jsx";
 import UsuarioListar from "../pages/usuarios/UsuarioListar.jsx";
-import UsuarioCrear from "../pages/usuarios/UsuarioCrear.jsx";
 import RolListar from "../pages/roles/RolListar.jsx";
 import RolCrear from "../pages/roles/RolCrear.jsx";
+import PermisoListar from "../pages/permisos/PermisoListar.jsx";
+import RolPermisoListar from "../pages/rolpermiso/RolPermisoListar.jsx";
 import "../styles/layout.css";
 
 export default function Layout() {
@@ -41,15 +44,18 @@ export default function Layout() {
   const soloDashboard = !panelContent;
 
   return (
-    <div className="layout">
+    <>
+      <Header />
+      <div className="layout">
       {/* Sidebar */}
       <aside className="sidebar">
         <ul>
           <li>
             <NavLink
               to="/panel"
-              className={({ isActive }) => (isActive ? "active" : "")}
+              className={({ isActive }) => (isActive ? "active drivenow-link" : "drivenow-link")}
               onClick={() => { setPanelContent(null); setOpenEntity(null); setOpenSubMenu(null); }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
             >
               Dashboard
             </NavLink>
@@ -154,7 +160,6 @@ export default function Layout() {
             {openEntity === "usuarios" && (
               <ul>
                 <li style={subItemStyle} onClick={() => setPanelContent("usuarioListar")}>Listar</li>
-                <li style={subItemStyle} onClick={() => setPanelContent("usuarioCrear")}>Crear</li>
                 <li style={subItemStyle} onClick={() => setPanelContent("usuarioEditar")}>Editar Items</li>
                 {/* Sub-entidad Roles */}
                 <li>
@@ -169,8 +174,21 @@ export default function Layout() {
                     </ul>
                   )}
                 </li>
+                {/* Sub-entidad Permisos */}
+                <li>
+                  <div onClick={() => toggleSubMenu("permisos")} style={{ ...subItemStyle, fontWeight: "bold" }}>
+                    Permisos {openSubMenu === "permisos" ? "▼" : "▶"}
+                  </div>
+                  {openSubMenu === "permisos" && (
+                    <ul>
+                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("permisoListar")}>Listar</li>
+                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("permisoEditar")}>Editar Items</li>
+                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("rolPermisoListar")}>Permisos por Rol</li>
+                    </ul>
+                  )}
+                </li>
                 {/* Botones especiales */}
-                <li style={subItemStyle} onClick={() => setPanelContent("createAdmin")}>Crear nuevo ADMIN</li>
+                <li style={subItemStyle} onClick={() => setPanelContent("createUser")}>Crear nuevo USER</li>
                 <li style={subItemStyle} onClick={() => setPanelContent("changePassword")}>Cambiar contraseña</li>
               </ul>
             )}
@@ -179,10 +197,7 @@ export default function Layout() {
       </aside>
       {/* Contenido principal */}
       <div className="main-content">
-        <div className="navbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0 }}>Panel de Administración</h2>
-          <UserInfo />
-        </div>
+
         <div className="content">
           {/* Categorías */}
           {panelContent === "categoriaListar" && <CategoriaListar />}
@@ -214,18 +229,22 @@ export default function Layout() {
           {panelContent === "reviewEditar" && <ReviewListar modoEdicion={true} />}
           {/* Usuarios */}
           {panelContent === "usuarioListar" && <UsuarioListar />}
-          {panelContent === "usuarioCrear" && <UsuarioCrear />}
           {panelContent === "usuarioEditar" && <UsuarioListar modoEdicion={true} />}
           {/* Roles */}
           {panelContent === "rolListar" && <RolListar />}
           {panelContent === "rolCrear" && <RolCrear />}
           {panelContent === "rolEditar" && <RolListar modoEdicion={true} />}
+          {/* Permisos */}
+          {panelContent === "permisoListar" && <PermisoListar />}
+          {panelContent === "permisoEditar" && <PermisoListar modoEdicion={true} />}
+          {panelContent === "rolPermisoListar" && <RolPermisoListar />}
           {/* Botones especiales */}
-          {panelContent === "createAdmin" && <CreateAdminForm />}
+          {panelContent === "createUser" && <CreateUserForm />}
           {panelContent === "changePassword" && <ChangePassword />}
           {!panelContent && <Outlet />}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -36,7 +36,7 @@ public class Producto {
     // --- Relaciones ---
 
     // Categoría del producto
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "categoria_id")
     private Categoria categoria;
 

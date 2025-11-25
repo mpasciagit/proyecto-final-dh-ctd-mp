@@ -55,8 +55,8 @@ const ReviewSystem = ({ productId, reviews, stats, onAddReview, canUserReview, r
 
   // 📅 Formato de fecha
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit' });
   };
 
   // 🔍 Filtrar y ordenar reseñas (con fallback)
@@ -72,9 +72,9 @@ const ReviewSystem = ({ productId, reviews, stats, onAddReview, canUserReview, r
     filteredReviews.sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return new Date(b.date) - new Date(a.date);
+          return new Date(b.date + 'T00:00:00') - new Date(a.date + 'T00:00:00');
         case 'oldest':
-          return new Date(a.date) - new Date(b.date);
+          return new Date(a.date + 'T00:00:00') - new Date(b.date + 'T00:00:00');
         case 'highest':
           return b.rating - a.rating;
         case 'lowest':
@@ -215,12 +215,9 @@ const ReviewCard = ({ review, renderStars, formatDate }) => {
   // Fecha en formato dd/mm/aaaa
   const formatShortDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    const date = new Date(dateString + 'T00:00:00');
     if (isNaN(date)) return '';
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    return date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   // Soporta ambos: fechaCreacion/date

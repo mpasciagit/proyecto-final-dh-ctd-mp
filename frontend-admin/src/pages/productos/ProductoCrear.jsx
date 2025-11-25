@@ -10,7 +10,8 @@ export default function ProductoCrear({ onCreated } = {}) {
   const [precio, setPrecio] = useState("");
   const [reservable, setReservable] = useState(true);
   const [cantidadTotal, setCantidadTotal] = useState("");
-  const [caracteristicasSeleccionadas, setCaracteristicasSeleccionadas] = useState([]);
+  const [caracteristicasSeleccionadas, setCaracteristicasSeleccionadas] = useState(["", "", "", ""]);
+  const [valoresCaracteristicas, setValoresCaracteristicas] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -23,9 +24,10 @@ export default function ProductoCrear({ onCreated } = {}) {
     setPrecio("");
     setReservable(true);
     setCantidadTotal("");
-    setCaracteristicasSeleccionadas([]);
+    setCaracteristicasSeleccionadas(["", "", "", ""]);
+    setValoresCaracteristicas(["", "", "", ""]);
     setError("");
-    setSuccess("");
+    // No borrar success aquí, para que el mensaje permanezca tras crear
   };
 
   const handleSubmit = async (e) => {
@@ -46,7 +48,14 @@ export default function ProductoCrear({ onCreated } = {}) {
         reservable: Boolean(reservable),
         cantidadTotal: parseInt(cantidadTotal, 10),
         categoriaId: parseInt(categoriaId, 10),
-        caracteristicas: caracteristicasSeleccionadas.map((id) => ({ id: parseInt(id, 10) })),
+        productoCaracteristica: caracteristicasSeleccionadas
+          .map((id, idx) => {
+            if (id && !isNaN(Number(id))) {
+              return { caracteristicaId: parseInt(id, 10), valor: valoresCaracteristicas[idx] };
+            }
+            return null;
+          })
+          .filter(Boolean),
       };
       const resp = await axios.post(
         "http://localhost:8080/api/productos",
@@ -87,7 +96,7 @@ export default function ProductoCrear({ onCreated } = {}) {
     <div
       style={{
         maxWidth: 640,
-        margin: "1.5rem auto",
+        margin: "calc(1.5rem - 19px) auto 1.5rem auto",
         padding: "1.25rem",
         background: "white",
         border: "1px solid #e5e7eb",
@@ -104,7 +113,7 @@ export default function ProductoCrear({ onCreated } = {}) {
             onChange={(e) => setCategoriaId(e.target.value)}
             required
             placeholder="ID de la categoría"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
+            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem", marginRight: '0.5rem', boxSizing: 'border-box' }}
           />
         </label>
 
@@ -116,7 +125,7 @@ export default function ProductoCrear({ onCreated } = {}) {
             onChange={(e) => setNombre(e.target.value)}
             required
             placeholder="Nombre del producto"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
+            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem", marginRight: '0.5rem', boxSizing: 'border-box' }}
           />
         </label>
 
@@ -127,7 +136,7 @@ export default function ProductoCrear({ onCreated } = {}) {
             onChange={(e) => setDescripcion(e.target.value)}
             placeholder="Descripción (opcional)"
             rows={3}
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
+            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem", marginRight: '0.5rem', boxSizing: 'border-box' }}
           />
         </label>
 
@@ -138,21 +147,46 @@ export default function ProductoCrear({ onCreated } = {}) {
           ) : errorCarac ? (
             <span style={{ color: "crimson" }}>{errorCarac}</span>
           ) : (
-            <select
-              multiple
-              value={caracteristicasSeleccionadas}
-              onChange={(e) => {
-                const options = Array.from(e.target.selectedOptions, (opt) => opt.value);
-                setCaracteristicasSeleccionadas(options);
-              }}
-              style={{ width: "100%", minHeight: 80, padding: "0.5rem", marginTop: "0.25rem" }}
-            >
-              {caracteristicas.map((carac) => (
-                <option key={carac.id} value={carac.id}>
-                  {carac.nombre}
-                </option>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
+              {[0, 1, 2, 3].map((idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <select
+                    value={caracteristicasSeleccionadas[idx]}
+                    onChange={e => {
+                      const value = e.target.value;
+                      // Evitar repetidos
+                      if (caracteristicasSeleccionadas.includes(value) && value !== "") return;
+                      const nuevas = [...caracteristicasSeleccionadas];
+                      nuevas[idx] = value;
+                      setCaracteristicasSeleccionadas(nuevas);
+                    }}
+                    style={{ width: '60%', padding: '0.5rem' }}
+                  >
+                    <option value="">Seleccione característica</option>
+                    {caracteristicas
+                      .filter(carac =>
+                        carac.id === Number(caracteristicasSeleccionadas[idx]) ||
+                        !caracteristicasSeleccionadas.includes(String(carac.id))
+                      )
+                      .map(carac => (
+                        <option key={carac.id} value={carac.id}>{carac.nombre}</option>
+                      ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Valor"
+                    value={valoresCaracteristicas[idx]}
+                    onChange={e => {
+                      const nuevosValores = [...valoresCaracteristicas];
+                      nuevosValores[idx] = e.target.value;
+                      setValoresCaracteristicas(nuevosValores);
+                    }}
+                    style={{ width: '38%', padding: '0.5rem', marginRight: '0.5rem', boxSizing: 'border-box' }}
+                    disabled={!caracteristicasSeleccionadas[idx]}
+                  />
+                </div>
               ))}
-            </select>
+            </div>
           )}
         </label>
 
@@ -165,7 +199,7 @@ export default function ProductoCrear({ onCreated } = {}) {
             required
             min={1}
             placeholder="Cantidad total disponible"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
+            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem", marginRight: '0.5rem', boxSizing: 'border-box' }}
           />
         </label>
 
@@ -179,7 +213,7 @@ export default function ProductoCrear({ onCreated } = {}) {
             min={0}
             step={0.01}
             placeholder="Precio"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
+            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem", marginRight: '0.5rem', boxSizing: 'border-box' }}
           />
         </label>
 
@@ -193,7 +227,7 @@ export default function ProductoCrear({ onCreated } = {}) {
           Reservable
         </label>
 
-        <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.5rem", alignItems: 'center' }}>
           <button
             type="submit"
             disabled={loading}
@@ -211,7 +245,7 @@ export default function ProductoCrear({ onCreated } = {}) {
 
           <button
             type="button"
-            onClick={resetForm}
+            onClick={() => { resetForm(); setSuccess(""); }}
             disabled={loading}
             style={{
               padding: "0.6rem 1rem",
@@ -223,10 +257,15 @@ export default function ProductoCrear({ onCreated } = {}) {
           >
             Limpiar
           </button>
+
+          {success && (
+            <span style={{ color: '#2563eb', fontWeight: 500, marginLeft: '1rem' }}>
+              Producto creado con éxito. Verifique en el menú Producto &gt; Listar.
+            </span>
+          )}
         </div>
 
         {error && <p style={{ color: "crimson", margin: 0 }}>{error}</p>}
-        {success && <p style={{ color: "green", margin: 0 }}>{success}</p>}
       </form>
     </div>
   );

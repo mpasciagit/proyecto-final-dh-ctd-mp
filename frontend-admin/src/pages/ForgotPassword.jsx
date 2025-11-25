@@ -1,7 +1,7 @@
-
 import "../styles/ForgotPassword.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -20,14 +20,46 @@ export default function ForgotPassword() {
     }
 
     setLoading(true);
+
     try {
-      // ✅ Llamada al endpoint del backend que envía un link o una contraseña temporal
+      // 🔹 Paso 1: verificar existencia y rol del usuario
+      const checkRes = await axios.get(`http://localhost:8080/api/usuarios/email-rol/${email}`);
+      const { exists, rol } = checkRes.data;
+
+      if (!exists) {
+        setError("No se encontró un usuario registrado con ese correo electrónico.");
+        return;
+      }
+
+      // 🔹 Paso 2: verificar si el rol tiene permiso ADMIN (endpoint público)
+
+      // Determinar rolId numérico
+
+      // Nuevo formato: rol es un objeto con id y nombre
+      const rolId = rol && typeof rol === "object" && rol.id ? rol.id : null;
+      if (!rolId) {
+        setError("No es posible recuperar la contraseña por este medio. Si tienes dudas, contacta al administrador.");
+        return;
+      }
+
+      try {
+        const permisoRes = await axios.get(`http://localhost:8080/api/rol-permiso/public/rol/${rolId}/permiso/admin`);
+        const tienePermiso = permisoRes.data === true || permisoRes.data === "true";
+        if (!tienePermiso) {
+          setError("No es posible recuperar la contraseña por este medio. Si tienes dudas, contacta al administrador.");
+          return;
+        }
+      } catch (e) {
+        setError("No es posible recuperar la contraseña por este medio. Si tienes dudas, contacta al administrador.");
+        return;
+      }
+
+      // 🔹 Paso 3: si pasa los checks, enviar el correo de recuperación
       const response = await axios.post(
         "http://localhost:8080/api/auth/forgot-password",
         { email }
       );
 
-      // El backend debería responder con un mensaje tipo "Correo enviado" o similar
       setMessage(response.data.message || "Revisá tu correo para continuar con la recuperación.");
       setEmail("");
     } catch (err) {
@@ -52,6 +84,7 @@ export default function ForgotPassword() {
       <p>
         Ingresá el correo asociado a tu cuenta y te enviaremos instrucciones para restablecer tu contraseña.
       </p>
+
       <form className="forgot-form" onSubmit={handleSubmit}>
         <label>
           Correo electrónico
@@ -63,12 +96,11 @@ export default function ForgotPassword() {
             placeholder="tuemail@ejemplo.com"
           />
         </label>
-        <button
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "Enviando..." : "Enviar instrucciones"}
+
+        <button type="submit" disabled={loading}>
+          {loading ? "Verificando..." : "Enviar instrucciones"}
         </button>
+
         {error && <p className="forgot-error">{error}</p>}
         {message && <p className="forgot-success">{message}</p>}
       </form>

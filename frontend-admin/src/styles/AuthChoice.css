@@ -1,23 +1,45 @@
+/* Espaciado para el contenedor del botón Volver al Login */
+.auth-toggle-link {
+  margin: 0.4rem 0;
+}
+body {
+  background: #e3e9ff;
+}
+/* Botón de AuthChoice con cursor pointer */
+.auth-choice-btn {
+  cursor: pointer;
+}
+/* Título principal del modal raíz */
+.auth-title {
+  text-align: center;
+  margin-bottom: 0.1rem;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #1a237e;
+  letter-spacing: 1px;
+}
 
-/* Estilo unificado clásico para AuthChoice */
-.auth-choice {
-  max-width: 400px;
-  margin: 60px auto;
-  padding: 2rem 2.5rem;
+.auth-subtitle {
+  margin-bottom: 0.1rem;
+}
+
+ .auth-choice {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 0.5rem 0;
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 2px 16px rgba(0,0,0,0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.2rem;
   text-align: center;
 }
 
-.auth-choice h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1a237e;
+
+.auth-choice h2 {
+  margin-top: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
