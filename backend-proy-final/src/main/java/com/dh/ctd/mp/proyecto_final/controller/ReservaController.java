@@ -1,5 +1,6 @@
 package com.dh.ctd.mp.proyecto_final.controller;
 
+import com.dh.ctd.mp.proyecto_final.dto.DisponibilidadDTO;
 import com.dh.ctd.mp.proyecto_final.dto.ReservaDTO;
 import com.dh.ctd.mp.proyecto_final.entity.EstadoReserva;
 import com.dh.ctd.mp.proyecto_final.service.IReservaService;
@@ -109,5 +110,16 @@ public class ReservaController {
             @PathVariable Long productoId,
             @PathVariable EstadoReserva estado) {
         return ResponseEntity.ok(reservaService.findByProductoAndEstado(productoId, estado));
+    }
+
+    // ----------------- CONSULTAR DISPONIBILIDAD -----------------
+    @PostMapping("/disponibilidad")
+    public ResponseEntity<Boolean> verificarDisponibilidad(@RequestBody DisponibilidadDTO disponibilidadDTO) {
+        boolean disponible = reservaService.verificarDisponibilidad(
+                disponibilidadDTO.getProductoId(),
+                disponibilidadDTO.getFechaInicio(),
+                disponibilidadDTO.getFechaFin()
+        );
+        return ResponseEntity.ok(disponible);
     }
 }

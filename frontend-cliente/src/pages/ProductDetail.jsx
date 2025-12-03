@@ -8,13 +8,12 @@ import {
 import ProductoCaracteristicas from "../components/ProductoCaracteristicas";
 import { FavoriteButton, ReviewSystem } from "../components";
 import { reservationSteps } from "../config/steps";
-import reservationService from "../services/reservationService";
-import reviewService from "../services/reviewService";
 import { useAuth } from "../context/AuthContext";
+import { useReservations } from "../context/ReservationContext";
 import StepProgressBar from "../components/StepProgressBar";
 import ShareProductModal from "../components/ShareProductModal";
 import { Share2 } from "lucide-react";
-import RangeCalendarModal from "../components/RangeCalendarModal";
+import { useCalendarModal } from "../context/CalendarModalContext";
 import {
   useParams,
   useNavigate,
@@ -27,6 +26,7 @@ import {
   setDates,
 } from "../redux/slices/reservationSlice";
 import { locations } from "../utils/locations";
+import useProductAvailability from "../hooks/useProductAvailability";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -34,6 +34,8 @@ export default function ProductDetail() {
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useAuth();
+  const { createReservation } = useReservations();
+  const { isChecking, isAvailable, error: availabilityError, checkAvailability } = useProductAvailability();
 
   // ¿viene con ?modo=exploracion o volvió del login con estado?
   const [searchParams] = useSearchParams();
@@ -73,45 +75,29 @@ export default function ProductDetail() {
     return null;
   });
 
-  // Estado para controlar el modal de calendario de rango
-  const [showCalendarModal, setShowCalendarModal] = useState(false);
-  // Campo que abrió el modal ("retiro" o "devolucion")
-  const [calendarField, setCalendarField] = useState(null);
-  // Estado para el rango seleccionado (sincronizado con los locales)
-  const [selectedRange, setSelectedRange] = useState({
-    startDate: localStartDate,
-    endDate: localEndDate,
-  });
-
-  // Sincronizar selectedRange con los estados locales si cambian
-  useEffect(() => {
-    setSelectedRange({
-      startDate: localStartDate,
-      endDate: localEndDate,
-    });
-  }, [localStartDate, localEndDate]);
+  // Modal global de fechas
+  const { openModal } = useCalendarModal();
 
   // Handler para abrir el modal desde un input
-  const handleCalendarInputClick = (field) => {
-    setCalendarField(field); // "retiro" o "devolucion" (por si se quiere lógica especial)
-    setShowCalendarModal(true);
-  };
-
-  // Handler para confirmar el rango en el modal
-  const handleCalendarConfirm = (range) => {
-    setShowCalendarModal(false);
-    setCalendarField(null);
-    // Convertir strings a Date para el estado local
-    setLocalStartDate(range.startDate ? new Date(range.startDate + 'T00:00:00') : null);
-    setLocalEndDate(range.endDate ? new Date(range.endDate + 'T00:00:00') : null);
-    // Guardar en redux como string
-    dispatch(setDates({ start: range.startDate, end: range.endDate }));
-  };
-
-  // Handler para cerrar el modal sin cambios
-  const handleCalendarClose = () => {
-    setShowCalendarModal(false);
-    setCalendarField(null);
+  const handleCalendarInputClick = () => {
+    openModal(
+      {
+        startDate: localStartDate
+          ? localStartDate.toISOString().slice(0, 10)
+          : '',
+        endDate: localEndDate
+          ? localEndDate.toISOString().slice(0, 10)
+          : '',
+        key: 'selection',
+      },
+      (range) => {
+        // Convertir strings a Date para el estado local
+        setLocalStartDate(range.startDate ? new Date(range.startDate + 'T00:00:00') : null);
+        setLocalEndDate(range.endDate ? new Date(range.endDate + 'T00:00:00') : null);
+        // Guardar en redux como string
+        dispatch(setDates({ start: range.startDate, end: range.endDate }));
+      }
+    );
   };
 
   const [localPickupLocation, setLocalPickupLocation] = useState(() => {
@@ -169,6 +155,21 @@ export default function ProductDetail() {
     setLocalReviews(reviews || []);
   }, [reviews]);
 
+  // Consultar disponibilidad al entrar o cambiar fechas
+  useEffect(() => {
+    // Solo si hay producto y fechas válidas
+    const productId = product?.id || id;
+    const startDate = modoExploracion
+      ? localStartDate?.toISOString().slice(0, 10)
+      : reservation?.selectedDates?.start;
+    const endDate = modoExploracion
+      ? localEndDate?.toISOString().slice(0, 10)
+      : reservation?.selectedDates?.end;
+    if (productId && startDate && endDate) {
+      checkAvailability(productId, startDate, endDate);
+    }
+  }, [product, id, localStartDate, localEndDate, modoExploracion, reservation, checkAvailability]);
+
   // handlers para selects (tienen que estar FUERA del JSX)
   const handlePickupChange = (e) => {
     const value = e.target.value;
@@ -194,16 +195,9 @@ export default function ProductDetail() {
       setCreatingReservation(true);
 
       const payload = {
-        userId: user.id,
-        productId: product.id,
         startDate: reservation?.selectedDates?.start || null,
         endDate: reservation?.selectedDates?.end || null,
-        pickupLocation: modoExploracion
-          ? localPickupLocation
-          : reservation.pickupLocation,
-        dropoffLocation: modoExploracion
-          ? localDropoffLocation
-          : reservation.dropoffLocation,
+        vehicleId: product.id, // Cambia a vehicleId para el contexto
         status: "PENDIENTE",
       };
 
@@ -212,14 +206,16 @@ export default function ProductDetail() {
         return;
       }
 
-      const created = await reservationService.createReservation(payload);
-      setReservationSuccess({
-        message: "Reserva creada correctamente",
-        reservation: created,
-      });
-
-      if (created?.id) {
-        navigate(`/reserva-confirmada/${created.id}`);
+      // Usar el método del contexto
+      const result = await createReservation(payload);
+      if (result.success && result.reservation?.id) {
+        setReservationSuccess({
+          message: "Reserva creada correctamente",
+          reservation: result.reservation,
+        });
+        navigate(`/reserva-confirmada/${result.reservation.id}`);
+      } else {
+        setReservationError(result.error || "No se pudo crear la reserva");
       }
     } catch (err) {
       console.error("Error creando reserva:", err);
@@ -280,6 +276,7 @@ export default function ProductDetail() {
             if (idx === 1) navigate("/productos");
           }
         }}
+        modoExploracion={modoExploracion}
       />
 
       {/* Header */}
@@ -457,19 +454,6 @@ export default function ProductDetail() {
                   />
                 </>
               )}
-        {/* Modal de calendario de rango */}
-        {modoExploracion && (
-          <RangeCalendarModal
-            open={showCalendarModal}
-            onClose={handleCalendarClose}
-            onConfirm={handleCalendarConfirm}
-            initialRange={{
-              startDate: localStartDate || new Date(),
-              endDate: localEndDate || new Date(),
-              key: "selection"
-            }}
-          />
-        )}
             </div>
 
             {/* Lugar de devolución */}
@@ -500,7 +484,21 @@ export default function ProductDetail() {
                 />
               )}
             </div>
-          </div>
+          </div> {/* <-- cierre del grid 2x2 */}
+
+          {/* Mensaje de disponibilidad */}
+          {isChecking && (
+            <div className="text-blue-600 text-sm mb-2">Consultando disponibilidad...</div>
+          )}
+          {isAvailable === true && !isChecking && (
+            <div className="text-green-600 text-sm mb-2">¡Disponible para tus fechas!</div>
+          )}
+          {isAvailable === false && !isChecking && (
+            <div className="text-red-600 text-sm mb-2">No disponible en el rango seleccionado.</div>
+          )}
+          {availabilityError && (
+            <div className="text-red-500 text-xs mb-2">{availabilityError}</div>
+          )}
 
           {/* Precio */}
           <div className="border-t border-gray-200 pt-4 mb-4">

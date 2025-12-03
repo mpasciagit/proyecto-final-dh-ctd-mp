@@ -20,4 +20,7 @@ public interface IReservaService {
     List<ReservaDTO> findByEstado(EstadoReserva estado);
     List<ReservaDTO> findByUsuarioAndEstado(Long usuarioId, EstadoReserva estado);
     List<ReservaDTO> findByProductoAndEstado(Long productoId, EstadoReserva estado);
+
+    // Verifica si el producto está disponible en un rango de fechas
+    boolean verificarDisponibilidad(Long productoId, LocalDate fechaInicio, LocalDate fechaFin);
 }

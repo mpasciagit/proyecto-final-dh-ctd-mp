@@ -14,6 +14,7 @@ import com.dh.ctd.mp.proyecto_final.repository.ReservaRepository;
 import com.dh.ctd.mp.proyecto_final.repository.ReviewRepository;
 import com.dh.ctd.mp.proyecto_final.repository.UsuarioRepository;
 import com.dh.ctd.mp.proyecto_final.service.IReviewService;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,7 @@ public class ReviewServiceImpl implements IReviewService {
 
     @Override
     public ReviewDTO save(ReviewDTO reviewDTO) {
+        // Validaciones básicas
         if (reviewDTO.getPuntuacion() < 1 || reviewDTO.getPuntuacion() > 5) {
             throw new InvalidDataException("La puntuación debe estar entre 1 y 5");
         }
@@ -44,37 +46,43 @@ public class ReviewServiceImpl implements IReviewService {
             throw new InvalidDataException("El comentario no puede estar vacío");
         }
 
-        // Validar que el usuario tuvo una reserva FINALIZADA del producto
-        boolean hasCompletedReservation = reservaRepository
-            .existsByUsuarioIdAndProductoIdAndEstado(
-                reviewDTO.getUsuarioId(),
-                reviewDTO.getProductoId(),
-                EstadoReserva.FINALIZADA
-            );
-        if (!hasCompletedReservation) {
-            throw new InvalidDataException("Solo puedes hacer review de productos que hayas rentado y devuelto");
-        }
-
-        // Validar que no haya hecho review ya
-        boolean hasReviewed = reviewRepository
-            .existsByUsuarioIdAndProductoId(
-                reviewDTO.getUsuarioId(),
-                reviewDTO.getProductoId()
-            );
-        if (hasReviewed) {
-            throw new InvalidDataException("Ya has hecho review de este producto");
-        }
-
-        Usuario usuario = usuarioRepository.findById(reviewDTO.getUsuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + reviewDTO.getUsuarioId()));
-        Producto producto = productoRepository.findById(reviewDTO.getProductoId())
-                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + reviewDTO.getProductoId()));
+        // 1) Validar existencia de la reserva y consistencia con user/producto
         Reserva reserva = reservaRepository.findById(reviewDTO.getReservaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + reviewDTO.getReservaId()));
 
+        if (!reserva.getProducto().getId().equals(reviewDTO.getProductoId())) {
+            throw new InvalidDataException("La reserva no corresponde al producto");
+        }
+
+        if (!reserva.getUsuario().getId().equals(reviewDTO.getUsuarioId())) {
+            throw new InvalidDataException("La reserva no pertenece al usuario");
+        }
+
+        // 2) Solo se permite review si la reserva está FINALIZADA
+        if (reserva.getEstado() != EstadoReserva.FINALIZADA) {
+            throw new InvalidDataException("Solo puedes hacer review de productos que hayas rentado y devuelto");
+        }
+
+        // 3) Evitar que la misma reserva tenga más de un review
+        if (reserva.getReview() != null) {
+            throw new InvalidDataException("Ya has hecho review para esta reserva");
+        }
+
+        // Usamos las entidades ya relacionadas en la reserva para garantizar consistencia
+        Usuario usuario = reserva.getUsuario();
+        Producto producto = reserva.getProducto();
+
+        // Mapear DTO -> entidad usando ReviewMapper (métodos estáticos)
         Review review = ReviewMapper.toEntity(reviewDTO, usuario, producto, reserva);
 
+        // Guardar review
         Review saved = reviewRepository.save(review);
+
+        // Asociar review a la reserva y guardar (para mantener la relación bidireccional)
+        reserva.setReview(saved);
+        reservaRepository.save(reserva);
+
+        // Retornar DTO usando ReviewMapper
         return ReviewMapper.toDTO(saved);
     }
 

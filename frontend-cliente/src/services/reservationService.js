@@ -1,4 +1,4 @@
-// 📅 Servicio de Reservas
+// Servicio de Reservas
 import { apiRequest } from '../config/api.js';
 import API_CONFIG from '../config/api.js';
 
@@ -8,7 +8,7 @@ class ReservationService {
     return this.getReservationsByUser(userId);
   }
   
-  // 📋 Obtener todas las reservas
+  // Obtener todas las reservas
   async getAllReservations() {
     try {
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESERVAS.BASE);
@@ -19,7 +19,7 @@ class ReservationService {
     }
   }
   
-  // 🔍 Obtener reserva por ID
+  // Obtener reserva por ID
   async getReservationById(id) {
     try {
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESERVAS.BY_ID(id));
@@ -30,7 +30,7 @@ class ReservationService {
     }
   }
   
-  // 👤 Obtener reservas por usuario
+  // Obtener reservas por usuario
   async getReservationsByUser(userId) {
     try {
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESERVAS.BY_USUARIO(userId));
@@ -41,7 +41,7 @@ class ReservationService {
     }
   }
   
-  // 🚗 Obtener reservas por producto
+  // Obtener reservas por producto
   async getReservationsByProduct(productId) {
     try {
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESERVAS.BY_PRODUCTO(productId));
@@ -52,7 +52,7 @@ class ReservationService {
     }
   }
   
-  // 📊 Obtener reservas por estado
+  // Obtener reservas por estado
   async getReservationsByStatus(status) {
     try {
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESERVAS.BY_ESTADO(status));
@@ -63,7 +63,7 @@ class ReservationService {
     }
   }
   
-  // 📅 Obtener reservas por rango de fechas
+  // Obtener reservas por rango de fechas
   async getReservationsByDateRange(startDate, endDate) {
     try {
       const params = new URLSearchParams({
@@ -81,7 +81,7 @@ class ReservationService {
     }
   }
   
-  // ✅ Crear nueva reserva
+  // Crear nueva reserva
   async createReservation(reservationData) {
     try {
       // Formatear datos para el backend (solo string YYYY-MM-DD)
@@ -103,7 +103,7 @@ class ReservationService {
     }
   }
   
-  // ✏️ Actualizar reserva
+  // Actualizar reserva
   async updateReservation(id, reservationData) {
     try {
       const formattedData = {
@@ -127,7 +127,7 @@ class ReservationService {
     }
   }
   
-  // 🗑️ Cancelar/Eliminar reserva
+  // Cancelar/Eliminar reserva
   async cancelReservation(id) {
     try {
       await apiRequest(API_CONFIG.ENDPOINTS.RESERVAS.BY_ID(id), {
@@ -140,36 +140,7 @@ class ReservationService {
     }
   }
   
-  // 📊 Verificar disponibilidad para nuevas reservas
-  async checkAvailability(productId, startDate, endDate) {
-    try {
-      // Obtener reservas existentes del producto
-      const existingReservations = await this.getReservationsByProduct(productId);
-      
-      // Filtrar reservas activas (no canceladas)
-      const activeReservations = existingReservations.filter(
-        reservation => reservation.estado !== 'CANCELADA'
-      );
-      
-      // Verificar conflictos de fechas
-      const hasConflict = activeReservations.some(reservation => {
-        const reserveStart = new Date(reservation.fechaInicio);
-        const reserveEnd = new Date(reservation.fechaFin);
-        const newStart = new Date(startDate);
-        const newEnd = new Date(endDate);
-        
-        // Verificar solapamiento
-        return (newStart < reserveEnd && newEnd > reserveStart);
-      });
-      
-      return !hasConflict;
-    } catch (error) {
-      console.error('Error al verificar disponibilidad:', error);
-      throw error;
-    }
-  }
-  
-  // 📅 Obtener fechas ocupadas para un producto
+  // Obtener fechas ocupadas para un producto
   async getUnavailableDates(productId) {
     try {
       const reservations = await this.getReservationsByProduct(productId);
@@ -187,6 +158,28 @@ class ReservationService {
     } catch (error) {
       console.error('Error al obtener fechas no disponibles:', error);
       return [];
+    }
+  }
+  
+  // Consultar disponibilidad de un producto para un rango de fechas
+  async checkProductAvailability(productId, startDate, endDate) {
+    try {
+      const response = await apiRequest(
+        API_CONFIG.ENDPOINTS.RESERVAS.DISPONIBILIDAD,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            productoId: productId,
+            fechaInicio: startDate,
+            fechaFin: endDate
+          })
+        }
+      );
+      // El backend responde true/false
+      return response;
+    } catch (error) {
+      console.error('Error consultando disponibilidad:', error);
+      throw error;
     }
   }
 }

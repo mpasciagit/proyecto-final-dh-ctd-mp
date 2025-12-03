@@ -12,7 +12,7 @@ import {
 import { fetchCategories } from '../redux/slices/categorySlice';
 import { useNavigate } from 'react-router-dom';
 
-import RangeCalendarModal from './RangeCalendarModal';
+import { useCalendarModal } from '../context/CalendarModalContext';
 import { Calendar, MapPin, Search, Car } from 'lucide-react';
 import { locations } from '../utils/locations';
 
@@ -33,47 +33,27 @@ const SearchSection = () => {
     endDate: reservation.selectedDates?.end || '',
   });
 
-  // Estado para controlar el modal de calendario de rango
-  const [showCalendarModal, setShowCalendarModal] = useState(false);
-  // Campo que abrió el modal ("retiro" o "devolucion")
-  const [calendarField, setCalendarField] = useState(null);
-  // Estado para el rango seleccionado (sincronizado con searchData)
-  const [selectedRange, setSelectedRange] = useState({
-    startDate: searchData.startDate,
-    endDate: searchData.endDate,
-  });
-
-  // Sincronizar selectedRange con searchData si cambian
-  useEffect(() => {
-    setSelectedRange({
-      startDate: searchData.startDate,
-      endDate: searchData.endDate,
-    });
-  }, [searchData.startDate, searchData.endDate]);
+  // Modal global de fechas
+  const { openModal } = useCalendarModal();
 
   // Handler para abrir el modal desde un input
-  const handleCalendarInputClick = (field) => {
-    setCalendarField(field); // "retiro" o "devolucion" (por si se quiere lógica especial)
-    setShowCalendarModal(true);
-  };
-
-  // Handler para confirmar el rango en el modal
-  const handleCalendarConfirm = (range) => {
-    setShowCalendarModal(false);
-    setCalendarField(null);
-    // Actualizar fechas en searchData y redux (ambas como string)
-    setSearchData((prev) => ({
-      ...prev,
-      startDate: range.startDate,
-      endDate: range.endDate,
-    }));
-    dispatch(setDates({ start: range.startDate, end: range.endDate }));
-  };
-
-  // Handler para cerrar el modal sin cambios
-  const handleCalendarClose = () => {
-    setShowCalendarModal(false);
-    setCalendarField(null);
+  const handleCalendarInputClick = () => {
+    openModal(
+      {
+        startDate: searchData.startDate || '',
+        endDate: searchData.endDate || '',
+        key: 'selection',
+      },
+      (range) => {
+        // Actualizar fechas en searchData y redux (ambas como string)
+        setSearchData((prev) => ({
+          ...prev,
+          startDate: range.startDate,
+          endDate: range.endDate,
+        }));
+        dispatch(setDates({ start: range.startDate, end: range.endDate }));
+      }
+    );
   };
 
   /* Fechas y errores */
@@ -218,17 +198,7 @@ const SearchSection = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white cursor-pointer"
                   onClick={() => handleCalendarInputClick("devolucion")}
                 />
-            {/* Modal de calendario de rango */}
-            <RangeCalendarModal
-              open={showCalendarModal}
-              onClose={handleCalendarClose}
-              onConfirm={handleCalendarConfirm}
-              initialRange={{
-                startDate: searchData.startDate || '',
-                endDate: searchData.endDate || '',
-                key: "selection"
-              }}
-            />
+            {/* Modal de calendario de rango ahora es global, no se renderiza aquí */}
                 {dateErrors.end && (
                   <p className="text-red-600 text-sm mt-2">
                     Selecciona una fecha de devolución

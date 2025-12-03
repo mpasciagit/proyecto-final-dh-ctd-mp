@@ -68,7 +68,7 @@ public class ReservaServiceImpl implements IReservaService {
         // Guardar reserva
         Reserva reservaGuardada = reservaRepository.save(reserva);
 
-        // ✅ Enviar correo de confirmación al usuario
+        // Enviar correo de confirmación al usuario
         try {
             emailService.sendReservationConfirmationEmail(
                     usuario.getEmail(),
@@ -100,15 +100,56 @@ public class ReservaServiceImpl implements IReservaService {
 
     @Override
     public ReservaDTO update(ReservaDTO reservaDTO) {
+
         Reserva existente = reservaRepository.findById(reservaDTO.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + reservaDTO.getId()));
 
-        validarFechas(reservaDTO.getFechaInicio(), reservaDTO.getFechaFin());
+        // Determinar producto en la reserva (antes de validar solapamiento)
+        Long idProducto = existente.getProducto().getId();
+        if (reservaDTO.getProductoId() != null && !reservaDTO.getProductoId().equals(idProducto)) {
+            Producto producto = productoRepository.findById(reservaDTO.getProductoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
+            existente.setProducto(producto);
+            idProducto = producto.getId(); // actualizar referencia para validaciones posteriores
+        }
 
-        Reserva reserva = ReservaMapper.toEntity(reservaDTO);
-        reserva.setId(existente.getId());
+        // Actualizar fechas si vienen en el JSON
+        if (reservaDTO.getFechaInicio() != null && reservaDTO.getFechaFin() != null) {
 
-        return ReservaMapper.toDTO(reservaRepository.save(reserva));
+            validarFechas(reservaDTO.getFechaInicio(), reservaDTO.getFechaFin());
+
+            // Validar solapamiento (excepto contra sí misma)
+            boolean solapado = reservaRepository.existsByProductoIdAndFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
+                    idProducto,
+                    reservaDTO.getFechaFin(),
+                    reservaDTO.getFechaInicio()
+            );
+
+            if (solapado && !reservaDTO.getFechaInicio().equals(existente.getFechaInicio())) {
+                throw new BusinessRuleException("Las nuevas fechas están ocupadas para este producto.");
+            }
+
+            existente.setFechaInicio(reservaDTO.getFechaInicio());
+            existente.setFechaFin(reservaDTO.getFechaFin());
+        }
+
+        // Actualizar estado si viene en el JSON
+        if (reservaDTO.getEstado() != null) {
+            existente.setEstado(EstadoReserva.valueOf(reservaDTO.getEstado()));
+        }
+
+        // Cambiar usuario solo si viene en el JSON
+        if (reservaDTO.getUsuarioId() != null &&
+                !reservaDTO.getUsuarioId().equals(existente.getUsuario().getId())) {
+
+            Usuario usuario = usuarioRepository.findById(reservaDTO.getUsuarioId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+            existente.setUsuario(usuario);
+        }
+
+        // Guardar cambios
+        Reserva actualizada = reservaRepository.save(existente);
+        return ReservaMapper.toDTO(actualizada);
     }
 
     @Override
@@ -163,5 +204,13 @@ public class ReservaServiceImpl implements IReservaService {
         return reservaRepository.findByProductoIdAndEstado(productoId, estado).stream()
                 .map(ReservaMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean verificarDisponibilidad(Long productoId, LocalDate fechaInicio, LocalDate fechaFin) {
+        validarFechas(fechaInicio, fechaFin);
+        return !reservaRepository.existsByProductoIdAndFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
+                productoId, fechaFin, fechaInicio
+        );
     }
 }

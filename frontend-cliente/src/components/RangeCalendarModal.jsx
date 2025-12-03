@@ -47,7 +47,19 @@ export default function RangeCalendarModal({
     };
   }
 
+
   const [range, setRange] = useState(getDateRangeFromAny(initialRange));
+
+  // Responsive: detectar ancho de pantalla para ajustar el calendario
+  const [isTabletOrLarger, setIsTabletOrLarger] = useState(() => window.innerWidth >= 640);
+
+  useEffect(() => {
+    function handleResize() {
+      setIsTabletOrLarger(window.innerWidth >= 640); // 640px = sm de Tailwind
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Sincronizar range con initialRange cada vez que el modal se abre o cambian las fechas
   useEffect(() => {
@@ -61,26 +73,32 @@ export default function RangeCalendarModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-lg shadow-lg p-6 min-w-[350px]">
-        <DateRange
-          editableDateInputs={true}
-          onChange={item => setRange(item.selection)}
-          moveRangeOnFirstSelection={false}
-          ranges={[range]}
-          months={2}
-          direction="horizontal"
-          rangeColors={["#2563eb"]}
-          showMonthAndYearPickers={true}
-          showDateDisplay={false}
-          locale={esLocale}
-          minDate={(() => {
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(today.getDate() + 1);
-            return tomorrow;
-          })()}
-        />
+      <div
+        className={`bg-white rounded-lg shadow-lg w-full p-2 sm:p-6 ${
+          isTabletOrLarger ? 'max-w-[700px]' : 'max-w-[400px]'
+        }`}
+      >
+          <div className="w-full">
+            <DateRange
+              editableDateInputs={true}
+              onChange={item => setRange(item.selection)}
+              moveRangeOnFirstSelection={false}
+              ranges={[range]}
+              months={2}
+              direction={"horizontal"}
+              rangeColors={["#2563eb"]}
+              showMonthAndYearPickers={true}
+              showDateDisplay={false}
+              locale={esLocale}
+              minDate={(() => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+                return tomorrow;
+              })()}
+            />
+          </div>
         <div className="flex justify-end gap-2 mt-4">
           <button
             className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 cursor-pointer"

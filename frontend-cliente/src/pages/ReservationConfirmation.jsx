@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Check, Calendar, MapPin, User, Mail, Phone, ArrowLeft } from 'lucide-react';
+import { Check, Calendar, MapPin, User, Mail, Phone } from 'lucide-react';
 import { useReservations } from '../context/ReservationContext';
 import { useAuth } from '../context/AuthContext';
 import StepProgressBar from '../components/StepProgressBar';
@@ -299,7 +299,6 @@ const ReservationConfirmation = () => {
             to="/"
             className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
             Volver al Inicio
           </Link>
 

@@ -1,7 +1,31 @@
+// 🚨 Nuevo: Función para determinar dinámicamente la URL base de la API
+const getDynamicBaseUrl = () => {
+  const hostname = window.location.hostname;
+  // Puerto de tu backend Spring Boot
+  const BACKEND_PORT = '8080'; 
+
+  // Verificar si estamos en desarrollo local (localhost o 127.0.0.1)
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+  if (isLocalhost) {
+    // Si estamos en localhost, usamos la ruta relativa que será interceptada por el proxy de Vite
+    // Ejemplo: /api
+    return '/api'; 
+  } else {
+    // Si estamos en una IP de red (ej: 192.168.0.105), apuntamos DIRECTAMENTE al backend
+    // Esto evita el conflicto de red del proxy de Vite.
+    // Ejemplo: http://192.168.0.105:8080/api
+    const protocol = window.location.protocol;
+    return `${protocol}//${hostname}:${BACKEND_PORT}/api`;
+  }
+};
+
+
 // 🔧 Configuración de API para integración con backend
 const API_CONFIG = {
   // URLs base
-  BASE_URL: 'http://localhost:8080/api',
+  // 💥 CAMBIO CLAVE: Llama a la función para obtener la URL dinámica
+  BASE_URL: getDynamicBaseUrl(),
   
   // Endpoints principales
   ENDPOINTS: {
@@ -38,7 +62,8 @@ const API_CONFIG = {
       BY_USUARIO: (usuarioId) => `/reservas/usuario/${usuarioId}`,
       BY_PRODUCTO: (productoId) => `/reservas/producto/${productoId}`,
       BY_ESTADO: (estado) => `/reservas/estado/${estado}`,
-      BY_RANGO_FECHAS: '/reservas/rango-fechas'
+      BY_RANGO_FECHAS: '/reservas/rango-fechas',
+      DISPONIBILIDAD: '/reservas/disponibilidad' // <--- agregado
     },
     
     // Favoritos
@@ -64,21 +89,29 @@ const API_CONFIG = {
 
 // 🔑 Helper para obtener headers con autenticación
 export const getAuthHeaders = () => {
-  const token = localStorage.getItem('authToken');
+  // 🚨 RECOMENDACIÓN: Si usas Firebase u otra solución en el futuro,
+  // recuerda reemplazar localStorage por la gestión de estado centralizada.
+  const token = localStorage.getItem('authToken'); 
   return {
     'Content-Type': 'application/json',
+    // Agrega el token si existe
     ...(token && { 'Authorization': `Bearer ${token}` })
   };
 };
 
 // 🌐 Helper para construir URL completa
 export const buildApiUrl = (endpoint) => {
+  // Ahora utiliza la BASE_URL dinámica
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
 
 // 📡 Configuración de fetch con manejo de errores
 export const apiRequest = async (endpoint, options = {}) => {
   const url = buildApiUrl(endpoint);
+  
+  // Imprimir para depuración, así ves qué URL se está usando
+  console.log(`[API] Solicitando a: ${url}`); 
+  
   const config = {
     headers: getAuthHeaders(),
     ...options
@@ -91,11 +124,14 @@ export const apiRequest = async (endpoint, options = {}) => {
     if (!response.ok) {
       let errorData;
       try {
+        // Intenta leer como JSON primero
         errorData = await response.json();
       } catch {
+        // Si falla, lee como texto
         errorData = await response.text();
       }
-      throw new Error(errorData.message || errorData || `HTTP Error ${response.status}`);
+      // Lanza un error más descriptivo
+      throw new Error(errorData.message || errorData || `HTTP Error ${response.status} en ${url}`);
     }
 
     // Si es 204 No Content, retornar un objeto con mensaje de éxito
@@ -112,11 +148,13 @@ export const apiRequest = async (endpoint, options = {}) => {
     } else {
       // Caso B: Si es texto plano
       const text = await response.text();
-      return { successMessage: text };
+      // Si hay contenido, se retorna; si no, se usa un mensaje de éxito.
+      return text ? { textContent: text } : { successMessage: 'Respuesta de texto recibida.' };
     }
   } catch (error) {
-    console.error('API Request Error:', error);
-    throw error;
+    console.error(`[API ERROR] Falló la solicitud a ${url}:`, error);
+    // Vuelve a lanzar el error para que pueda ser manejado por el componente que llamó
+    throw error; 
   }
 };
 
