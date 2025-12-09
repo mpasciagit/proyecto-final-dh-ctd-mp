@@ -1,4 +1,4 @@
-import "../styles/ForgotPassword.css";
+import "../../styles/ForgotPassword.css";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -57,7 +57,7 @@ export default function ForgotPassword() {
       // 🔹 Paso 3: si pasa los checks, enviar el correo de recuperación
       const response = await axios.post(
         "http://localhost:8080/api/auth/forgot-password",
-        { email }
+        { email, origin: "ADMIN" }
       );
 
       setMessage(response.data.message || "Revisá tu correo para continuar con la recuperación.");

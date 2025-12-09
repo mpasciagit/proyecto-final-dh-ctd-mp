@@ -6,7 +6,6 @@ export default function CreateUserForm() {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
-  const [rol, setRol] = useState("ADMIN"); // 👈 valor por defecto
   const [password, setPassword] = useState("123456");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -34,7 +33,7 @@ export default function CreateUserForm() {
           apellido,
           email,
           password,
-          rol,
+          origin: "ADMIN",
         }
       );
 

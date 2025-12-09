@@ -8,4 +8,7 @@ public interface IRolPermisoService {
     List<RolPermisoDTO> listarTodos();
     PermisosPorRolDTO obtenerRolConPermisos(Long rolId);
     boolean tienePermisoAdmin(Long rolId);
+
+    RolPermisoDTO asignarPermiso(RolPermisoDTO dto);
+    void quitarPermiso(Long rolId, Long permisoId);
 }

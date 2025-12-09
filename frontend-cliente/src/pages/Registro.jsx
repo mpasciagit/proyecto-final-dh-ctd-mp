@@ -90,7 +90,14 @@ const Register = () => {
     if (!validateForm()) return;
 
     const { confirmPassword, ...userData } = formData;
-    const result = await register(userData);
+    // Detectar origen
+    const hostname = window.location.hostname;
+    let origin = 'CLIENT';
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      origin = 'TEST';
+    }
+    const userDataWithOrigin = { ...userData, origin };
+    const result = await register(userDataWithOrigin);
 
     if (result.success) {
       navigate('/');

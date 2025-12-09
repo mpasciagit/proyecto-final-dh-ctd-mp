@@ -11,6 +11,7 @@ import com.dh.ctd.mp.proyecto_final.repository.RolRepository;
 import com.dh.ctd.mp.proyecto_final.repository.UsuarioRepository;
 import com.dh.ctd.mp.proyecto_final.service.EmailService;
 import com.dh.ctd.mp.proyecto_final.service.IUsuarioService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,34 +42,45 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
     private final EmailService emailService;
+    private final PasswordResetService passwordResetService;
 
     // ------------------- REGISTRO -------------------
     public AuthenticationResponse register(RegisterRequest request) {
+        // Validación básica: email único
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email ya registrado: " + request.getEmail());
         }
 
+        // Crear entidad Usuario
         Usuario usuario = new Usuario();
         usuario.setNombre(request.getNombre());
         usuario.setApellido(request.getApellido());
         usuario.setEmail(request.getEmail());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
 
+        // Asignar rol por defecto USER
         com.dh.ctd.mp.proyecto_final.entity.Rol rol = rolRepository.findByNombre("USER")
                 .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado: USER"));
         usuario.setRol(rol);
 
+        // Resolver origin desde el request DTO; si es null, usar CLIENT por defecto
+        OriginType origin = request.getOrigin() != null ? request.getOrigin() : OriginType.CLIENT;
+
+        // Persistir usuario
         Usuario saved = usuarioRepository.save(usuario);
 
-        // Enviar correo de confirmación de registro
+        // Enviar correo de confirmación con origin (implementación de EmailService debe aceptar origin)
         emailService.sendRegistrationConfirmationEmail(
-            saved.getEmail(),
-            saved.getNombre()
+                saved.getEmail(),
+                saved.getNombre(),
+                origin
         );
 
+        // Generar token JWT para respuesta (si lo querés devolver)
         UserDetails userDetails = userDetailsService.loadUserByUsername(saved.getEmail());
         String jwtToken = jwtService.generateToken(userDetails);
 
+        // Construir y devolver AuthenticationResponse
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .usuarioId(saved.getId())
@@ -116,27 +128,15 @@ public class AuthenticationService {
 
     // ------------------- OLVIDÉ MI CONTRASEÑA (envía token al mail/log) -------------------
     @Transactional
-    public void forgotPassword(String email) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + email));
-
-        // Generar token único y guardarlo (expira en 1 hora)
-        String token = UUID.randomUUID().toString().substring(0, 8);
-        PasswordResetToken tokenEntity = new PasswordResetToken();
-        tokenEntity.setUsuario(usuario);
-        tokenEntity.setToken(token);
-        tokenEntity.setExpiryDate(LocalDateTime.now().plusHours(1));
-        tokenEntity.setUsed(false);
-        tokenRepository.save(tokenEntity);
-
-        // Enviar email/log con el token
-        emailService.sendResetPasswordEmail(usuario.getEmail(), token);
+    public void forgotPassword(String email, OriginType origin) {
+        passwordResetService.createPasswordResetToken(email, origin);
     }
 
     // ------------------- RESETEAR CONTRASEÑA (vía token del usuario) -------------------
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        PasswordResetToken tokenEntity = tokenRepository.findByToken(request.getToken())
+        PasswordResetToken tokenEntity = tokenRepository
+                .findByToken(request.getToken())
                 .orElseThrow(() -> new ResourceNotFoundException("Token inválido o no encontrado"));
 
         if (tokenEntity.getExpiryDate().isBefore(LocalDateTime.now())) {
@@ -151,6 +151,7 @@ public class AuthenticationService {
         usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
         usuarioRepository.save(usuario);
 
+        // Marcar token como usado
         tokenEntity.setUsed(true);
         tokenRepository.save(tokenEntity);
     }

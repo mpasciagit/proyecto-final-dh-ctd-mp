@@ -1,6 +1,7 @@
 import Header from "./Header.jsx";
 import { Outlet, NavLink } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import AdminHelp from "./AdminHelp.jsx";
 import UserInfo from "./UserInfo.jsx";
 import CreateUserForm from "../pages/usuarios/CreateUserForm.jsx";
 import ChangePassword from "../pages/usuarios/ChangePassword.jsx";
@@ -23,12 +24,14 @@ import RolListar from "../pages/roles/RolListar.jsx";
 import RolCrear from "../pages/roles/RolCrear.jsx";
 import PermisoListar from "../pages/permisos/PermisoListar.jsx";
 import RolPermisoListar from "../pages/rolpermiso/RolPermisoListar.jsx";
+import RolPermisoCrear from "../pages/rolpermiso/RolPermisoCrear.jsx";
 import "../styles/layout.css";
 
 export default function Layout() {
   const [openEntity, setOpenEntity] = useState(null);
   const [openSubMenu, setOpenSubMenu] = useState(null);
   const [panelContent, setPanelContent] = useState(null);
+  // ...existing code...
 
   const toggleEntity = (entity) => {
     setOpenEntity(prev => (prev === entity ? null : entity));
@@ -110,19 +113,6 @@ export default function Layout() {
                     </ul>
                   )}
                 </li>
-              </ul>
-            )}
-          </li>
-          {/* Reservas */}
-          <li>
-            <div onClick={() => toggleEntity("reservas")} style={{ cursor: "pointer" }}>
-              Reservas {openEntity === "reservas" ? "▼" : "▶"}
-            </div>
-            {openEntity === "reservas" && (
-              <ul>
-                <li style={subItemStyle} onClick={() => setPanelContent("reservaListar")}>Listar</li>
-                <li style={subItemStyle} onClick={() => setPanelContent("reservaCrear")}>Crear</li>
-                <li style={subItemStyle} onClick={() => setPanelContent("reservaEditar")}>Editar Items</li>
                 {/* Sub-entidad Favoritos */}
                 <li>
                   <div onClick={() => toggleSubMenu("favoritos")} style={{ ...subItemStyle, fontWeight: "bold" }}>
@@ -136,6 +126,19 @@ export default function Layout() {
                     </ul>
                   )}
                 </li>
+              </ul>
+            )}
+          </li>
+          {/* Reservas */}
+          <li>
+            <div onClick={() => toggleEntity("reservas")} style={{ cursor: "pointer" }}>
+              Reservas {openEntity === "reservas" ? "▼" : "▶"}
+            </div>
+            {openEntity === "reservas" && (
+              <ul>
+                <li style={subItemStyle} onClick={() => setPanelContent("reservaListar")}>Listar</li>
+                <li style={subItemStyle} onClick={() => setPanelContent("reservaCrear")}>Crear</li>
+                <li style={subItemStyle} onClick={() => setPanelContent("reservaEditar")}>Editar Items</li>
                 {/* Sub-entidad Reviews */}
                 <li>
                   <div onClick={() => toggleSubMenu("reviews")} style={{ ...subItemStyle, fontWeight: "bold" }}>
@@ -161,37 +164,62 @@ export default function Layout() {
               <ul>
                 <li style={subItemStyle} onClick={() => setPanelContent("usuarioListar")}>Listar</li>
                 <li style={subItemStyle} onClick={() => setPanelContent("usuarioEditar")}>Editar Items</li>
-                {/* Sub-entidad Roles */}
-                <li>
-                  <div onClick={() => toggleSubMenu("roles")} style={{ ...subItemStyle, fontWeight: "bold" }}>
-                    Roles {openSubMenu === "roles" ? "▼" : "▶"}
-                  </div>
-                  {openSubMenu === "roles" && (
-                    <ul>
-                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("rolListar")}>Listar</li>
-                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("rolCrear")}>Crear</li>
-                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("rolEditar")}>Editar Items</li>
-                    </ul>
-                  )}
-                </li>
-                {/* Sub-entidad Permisos */}
-                <li>
-                  <div onClick={() => toggleSubMenu("permisos")} style={{ ...subItemStyle, fontWeight: "bold" }}>
-                    Permisos {openSubMenu === "permisos" ? "▼" : "▶"}
-                  </div>
-                  {openSubMenu === "permisos" && (
-                    <ul>
-                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("permisoListar")}>Listar</li>
-                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("permisoEditar")}>Editar Items</li>
-                      <li style={{ marginLeft: "3rem", cursor: "pointer" }} onClick={() => setPanelContent("rolPermisoListar")}>Permisos por Rol</li>
-                    </ul>
-                  )}
-                </li>
                 {/* Botones especiales */}
                 <li style={subItemStyle} onClick={() => setPanelContent("createUser")}>Crear nuevo USER</li>
                 <li style={subItemStyle} onClick={() => setPanelContent("changePassword")}>Cambiar contraseña</li>
               </ul>
             )}
+          </li>
+            {/* Roles (top-level) */}
+            <li>
+              <div onClick={() => toggleEntity("roles")} style={{ cursor: "pointer" }}>
+                Roles {openEntity === "roles" ? "▼" : "▶"}
+              </div>
+              {openEntity === "roles" && (
+                <ul>
+                  <li style={subItemStyle} onClick={() => setPanelContent("rolListar")}>Listar</li>
+                  <li style={subItemStyle} onClick={() => setPanelContent("rolCrear")}>Crear</li>
+                  <li style={subItemStyle} onClick={() => setPanelContent("rolEditar")}>Editar Items</li>
+                </ul>
+              )}
+            </li>
+            {/* Permisos (top-level) */}
+            <li>
+              <div onClick={() => toggleEntity("permisos")} style={{ cursor: "pointer" }}>
+                Permisos {openEntity === "permisos" ? "▼" : "▶"}
+              </div>
+              {openEntity === "permisos" && (
+                <ul>
+                  <li style={subItemStyle} onClick={() => setPanelContent("permisoListar")}>Listar</li>
+                  <li style={subItemStyle} onClick={() => setPanelContent("permisoEditar")}>Editar Items</li>
+                </ul>
+              )}
+            </li>
+            {/* RolPermiso (top-level) */}
+            <li>
+              <div onClick={() => toggleEntity("rolPermiso")} style={{ cursor: "pointer" }}>
+                RolPermiso {openEntity === "rolPermiso" ? "▼" : "▶"}
+              </div>
+              {openEntity === "rolPermiso" && (
+                <ul>
+                  <li style={subItemStyle} onClick={() => setPanelContent("rolPermisoListar")}>Listar</li>
+                  <li style={subItemStyle} onClick={() => setPanelContent("rolPermisoCrear")}>Crear</li>
+                  <li style={subItemStyle} onClick={() => setPanelContent("rolPermisoEditar")}>Editar Items</li>
+                </ul>
+              )}
+            </li>
+          {/* Manual Panel-Admin */}
+          <li>
+            <div
+              onClick={() => {
+                setPanelContent("manualPanelAdmin");
+                setOpenEntity(null);
+                setOpenSubMenu(null);
+              }}
+              style={{ cursor: "pointer", fontWeight: "bold", color: panelContent === "manualPanelAdmin" ? '#1976d2' : undefined }}
+            >
+              Manual Panel-Admin
+            </div>
           </li>
         </ul>
       </aside>
@@ -238,9 +266,12 @@ export default function Layout() {
           {panelContent === "permisoListar" && <PermisoListar />}
           {panelContent === "permisoEditar" && <PermisoListar modoEdicion={true} />}
           {panelContent === "rolPermisoListar" && <RolPermisoListar />}
+          {panelContent === "rolPermisoEditar" && <RolPermisoListar modoEdicion={true} />}
+          {panelContent === "rolPermisoCrear" && <RolPermisoCrear />}
           {/* Botones especiales */}
           {panelContent === "createUser" && <CreateUserForm />}
           {panelContent === "changePassword" && <ChangePassword />}
+          {panelContent === "manualPanelAdmin" && <AdminHelp />}
           {!panelContent && <Outlet />}
         </div>
       </div>

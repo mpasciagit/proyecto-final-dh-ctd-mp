@@ -39,7 +39,7 @@ public class RolController {
     }
 
     // ----------------- LISTAR TODOS -----------------
-    // @PreAuthorize("hasAuthority('ROL:LISTAR')")
+    @PreAuthorize("hasAuthority('ROL:LISTAR')")
     @GetMapping
     public ResponseEntity<List<RolDTO>> listarTodos() {
         List<RolDTO> roles = rolService.findAll();

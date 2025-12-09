@@ -29,16 +29,13 @@ public class PasswordResetService {
      * Crea token y envía email (si el usuario existe).
      * No revela si el email existe (responder siempre OK en el endpoint).
      */
-    public void createPasswordResetToken(String email) {
+    public void createPasswordResetToken(String email, OriginType origin) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
-        if (usuarioOpt.isEmpty()) {
-            // Para evitar enumeración de usuarios, no informar error al cliente.
-            return;
-        }
+        if (usuarioOpt.isEmpty()) return;
 
         Usuario usuario = usuarioOpt.get();
 
-        // Borrar tokens previos para el usuario
+        // limpiar tokens previos del usuario
         tokenRepository.deleteByUsuarioId(usuario.getId());
 
         String token = UUID.randomUUID().toString();
@@ -48,13 +45,15 @@ public class PasswordResetService {
                 .token(token)
                 .expiryDate(expiry)
                 .usuario(usuario)
+                .used(false)
                 .build();
 
         tokenRepository.save(prt);
 
-        // enviar email (o log) con el token o link
-        emailService.sendResetPasswordEmail(usuario.getEmail(), token);
+        emailService.sendResetPasswordEmail(usuario.getEmail(), token, origin);
     }
+
+
 
     /**
      * Resetea la contraseña usando token.

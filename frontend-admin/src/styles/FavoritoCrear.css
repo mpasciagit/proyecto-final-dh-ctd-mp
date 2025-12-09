@@ -1,0 +1,38 @@
+.favorito-crear-container {
+  max-width: 400px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 2rem 1.5rem;
+}
+
+.favorito-crear-form label {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.favorito-crear-form input {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.favorito-crear-form button {
+  margin-top: 1rem;
+}
+
+.success-message {
+  color: green;
+  margin-top: 1rem;
+  font-weight: 500;
+}
+
+.error-message {
+  color: crimson;
+  margin-top: 1rem;
+  font-weight: 500;
+}

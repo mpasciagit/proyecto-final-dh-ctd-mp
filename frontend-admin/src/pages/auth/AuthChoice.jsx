@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Login from "./Login";
 import ForgotPassword from "./ForgotPassword";
-import "../styles/AuthChoice.css";
+import "../../styles/AuthChoice.css";
 
 export default function AuthChoice() {
   const [showForgot, setShowForgot] = useState(false);

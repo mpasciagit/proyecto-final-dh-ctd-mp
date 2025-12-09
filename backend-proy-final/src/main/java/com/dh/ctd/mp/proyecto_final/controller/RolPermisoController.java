@@ -17,6 +17,21 @@ public class RolPermisoController {
     @Autowired
     private IRolPermisoService rolPermisoService;
 
+    @PreAuthorize("hasAuthority('ROLPERMISO:CREAR')")
+    @PostMapping
+    public ResponseEntity<RolPermisoDTO> asignarPermisoARol(@RequestBody RolPermisoDTO dto) {
+        RolPermisoDTO creado = rolPermisoService.asignarPermiso(dto);
+        return ResponseEntity.ok(creado);
+    }
+
+    @PreAuthorize("hasAuthority('ROLPERMISO:ELIMINAR')")
+    @DeleteMapping("/rol/{rolId}/permiso/{permisoId}")
+    public ResponseEntity<Void> quitarPermisoDeRol(@PathVariable Long rolId,
+                                                   @PathVariable Long permisoId) {
+        rolPermisoService.quitarPermiso(rolId, permisoId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PreAuthorize("hasAuthority('ROLPERMISO:LISTAR')")
     @GetMapping
     public ResponseEntity<List<RolPermisoDTO>> listarTodos() {
@@ -43,5 +58,4 @@ public class RolPermisoController {
         boolean tienePermiso = rolPermisoService.tienePermisoAdmin(rolId);
         return ResponseEntity.ok(tienePermiso);
     }
-    
 }

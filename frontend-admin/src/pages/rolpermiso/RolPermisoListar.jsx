@@ -2,9 +2,15 @@ import { useState } from "react";
 import "../../styles/tabla-admin.css";
 import { useCrudActions } from "../../hooks/useCrudActions";
 
-export default function RolPermisoListar() {
-  const { data: rolPermisos, loading, error } = useCrudActions("/api/rol-permiso");
+import ModalConfirmacion from "../../components/ModalConfirmacion";
+
+export default function RolPermisoListar({ modoEdicion = true }) {
+  const { data: rolPermisos, loading, error, saveItem, deleteItem } = useCrudActions("/api/rol-permiso");
   const [sortConfig, setSortConfig] = useState({ key: null, asc: true });
+  const [editandoId, setEditandoId] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [itemAEliminar, setItemAEliminar] = useState(null);
 
   const handleSort = (key) => {
     setSortConfig((prev) => {
@@ -14,6 +20,43 @@ export default function RolPermisoListar() {
         return { key, asc: true };
       }
     });
+  };
+
+  const handleEditClick = (item) => {
+    setEditandoId(item.id);
+    setEditData({
+      rol: typeof item.rol === "object" ? item.rol.nombre : item.rol,
+      permiso: typeof item.permiso === "object" ? item.permiso.nombre : item.permiso,
+    });
+  };
+
+  const handleCancel = () => {
+    setEditandoId(null);
+    setEditData({});
+  };
+
+  const handleSave = async (id) => {
+    // Solo permite editar el permiso, no el rol (por lógica de negocio usual)
+    const updated = { ...editData };
+    // Si el backend espera objetos, aquí habría que mapear a IDs
+    const success = await saveItem(id, updated);
+    if (success) {
+      setEditandoId(null);
+      setEditData({});
+    }
+  };
+
+  const handleDeleteClick = (item) => {
+    setItemAEliminar(item);
+    setShowModal(true);
+  };
+
+  const confirmarEliminar = async () => {
+    if (itemAEliminar) {
+      await deleteItem(itemAEliminar); // Pasa el objeto completo para usar rol y permiso
+      setShowModal(false);
+      setItemAEliminar(null);
+    }
   };
 
   if (loading) return <p>Cargando permisos por rol...</p>;
@@ -68,6 +111,7 @@ export default function RolPermisoListar() {
         <table className="tabla-categorias">
           <thead>
             <tr>
+              {modoEdicion && <th>Acción</th>}
               <th style={{ cursor: 'pointer' }} onClick={() => handleSort('id')}>
                 ID <span style={{fontSize:'0.95em'}}>▲▼</span>
               </th>
@@ -82,13 +126,57 @@ export default function RolPermisoListar() {
           <tbody>
             {datosOrdenados.map((item) => (
               <tr key={item.id}>
+                {modoEdicion && (
+                  <td className="action-cell">
+                    {editandoId === item.id ? (
+                      <>
+                        <button title="Guardar" onClick={() => handleSave(item.id)}>✔</button>
+                        <button title="Cancelar" onClick={handleCancel}>✖</button>
+                      </>
+                    ) : (
+                      <>
+                        <button title="Editar" onClick={() => handleEditClick(item)}>✏</button>
+                        <button title="Eliminar" onClick={() => handleDeleteClick(item)}>❌</button>
+                      </>
+                    )}
+                  </td>
+                )}
                 <td>{item.id}</td>
-                <td>{typeof item.rol === "object" ? item.rol?.nombre : item.rol}</td>
-                <td>{typeof item.permiso === "object" ? item.permiso?.nombre : item.permiso}</td>
+                <td>
+                  {editandoId === item.id ? (
+                    <input
+                      type="text"
+                      value={editData.rol ?? ""}
+                      onChange={(e) => setEditData({ ...editData, rol: e.target.value })}
+                      disabled // Por lógica, no editable
+                    />
+                  ) : (
+                    typeof item.rol === "object" ? item.rol?.nombre : item.rol
+                  )}
+                </td>
+                <td>
+                  {editandoId === item.id ? (
+                    <input
+                      type="text"
+                      value={editData.permiso ?? ""}
+                      onChange={(e) => setEditData({ ...editData, permiso: e.target.value })}
+                    />
+                  ) : (
+                    typeof item.permiso === "object" ? item.permiso?.nombre : item.permiso
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+      {/* Modal de confirmación */}
+      {showModal && (
+        <ModalConfirmacion
+          mensaje={`¿Seguro que deseas eliminar la relación rol-permiso de "${itemAEliminar?.rol?.nombre || itemAEliminar?.rol}" y "${itemAEliminar?.permiso?.nombre || itemAEliminar?.permiso}"?`}
+          onConfirm={confirmarEliminar}
+          onCancel={() => setShowModal(false)}
+        />
       )}
     </div>
   );

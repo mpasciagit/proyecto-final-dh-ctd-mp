@@ -1,5 +1,6 @@
 package com.dh.ctd.mp.proyecto_final.authentication;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +15,6 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    // --- Registro de usuario ---
     @PostMapping("/register")
     public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authenticationService.register(request));
@@ -39,7 +39,7 @@ public class AuthenticationController {
     // --- Forgot Password / Olvidé mi contraseña ---
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        authenticationService.forgotPassword(request.getEmail());
+        authenticationService.forgotPassword(request.getEmail(), request.getOrigin());
         return ResponseEntity.ok("Se ha enviado un correo con instrucciones para resetear la contraseña");
     }
 

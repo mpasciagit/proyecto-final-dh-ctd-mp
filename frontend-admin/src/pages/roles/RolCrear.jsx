@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function RolCrear({ onCreated } = {}) {
@@ -8,10 +7,16 @@ export default function RolCrear({ onCreated } = {}) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  useEffect(() => {
+    return () => {
+      setSuccess("");
+    };
+  }, []);
+
   const resetForm = () => {
     setNombre("");
     setError("");
-    setSuccess("");
+    // No limpiar success aquí
   };
 
   const handleSubmit = async (e) => {
@@ -36,7 +41,7 @@ export default function RolCrear({ onCreated } = {}) {
           },
         }
       );
-      setSuccess("Rol creado con éxito.");
+      setSuccess("Rol creado, buscar en Roles > Listar");
       if (onCreated && typeof onCreated === "function") {
         try {
           onCreated(resp.data);

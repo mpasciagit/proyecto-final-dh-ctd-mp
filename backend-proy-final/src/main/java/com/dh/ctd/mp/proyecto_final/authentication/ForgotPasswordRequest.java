@@ -8,5 +8,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ForgotPasswordRequest {
+
     private String email;
+
+    // Etiqueta opcional, el backend mapeará a la baseUrl correspondiente
+    private OriginType origin;
 }

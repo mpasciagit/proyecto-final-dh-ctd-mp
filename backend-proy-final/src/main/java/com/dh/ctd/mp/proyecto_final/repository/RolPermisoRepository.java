@@ -2,11 +2,17 @@ package com.dh.ctd.mp.proyecto_final.repository;
 
 import com.dh.ctd.mp.proyecto_final.entity.RolPermiso;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import java.util.Optional;
 
 public interface RolPermisoRepository extends JpaRepository<RolPermiso, Long> {
 
-    @Query("SELECT COUNT(rp) > 0 FROM RolPermiso rp WHERE rp.rol.id = :rolId AND rp.permiso.nombre = :permisoNombre")
-    boolean existsByRolIdAndPermisoNombre(@Param("rolId") Long rolId, @Param("permisoNombre") String permisoNombre);
+    boolean existsByRolIdAndPermisoId(Long rolId, Long permisoId);
+
+    boolean existsByRol_IdAndPermiso_Nombre(Long rolId, String permisoNombre);
+
+    // verifica si ya existe la relación rol-permiso
+    Optional<RolPermiso> findByRolIdAndPermisoId(Long rolId, Long permisoId);
+
+    // elimina relación rol-permiso
+    void deleteByRolIdAndPermisoId(Long rolId, Long permisoId);
 }

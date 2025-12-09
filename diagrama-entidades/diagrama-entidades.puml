@@ -1,0 +1,129 @@
+@startuml DiagramaEntidades
+
+package entity {
+  class Producto {
+    - id: Long
+    - nombre: String
+    - descripcion: String
+    - precio: Double
+    - reservable: Boolean
+    - cantidadTotal: Integer 
+  }
+
+  class Categoria {
+    - id: Long
+    - nombre: String
+    - descripcion: String
+    - urlImagen: String
+  }
+
+  class Imagen {
+    - id: Long
+    - url: String
+    - textoAlternativo: String
+    - orden: Integer 
+  }
+
+  class Caracteristica {
+    - id: Long
+    - nombre: String
+    - descripcion: String
+    - iconoUrl: String
+  }
+
+  class ProductoCaracteristica {
+    - id: Long
+    - valor: String
+    - producto: Producto
+    - caracteristica: Caracteristica
+  }
+
+  class Reserva {
+    - id: Long
+    - fechaInicio: LocalDate
+    - fechaFin: LocalDate
+    - fechaCreacion: LocalDateTime
+    - estado: EstadoReserva
+    - usuario: Usuario
+    - producto: Producto    
+  }
+
+  enum EstadoReserva {
+    PENDIENTE
+    CONFIRMADA
+    EN_CURSO
+    CANCELADA
+    FINALIZADA
+  }
+
+  class Usuario {
+    - id: Long
+    - nombre: String
+    - apellido: String
+    - email: String
+    - password: String
+    - rol: Rol
+    - reservas: List<Reserva>
+    - favoritos: List<Favorito>
+  }
+
+  class Rol {
+    - id: Long
+    - nombre: String
+    - descripcion: String  
+  }
+
+  class Permiso {
+    - id: Long
+    - nombre: String    
+  }
+
+  class RolPermiso {
+    - id: Long
+    - rol: Rol
+    - permiso: Permiso    
+  } 
+
+  class Favorito {
+    - id: Long
+    - fechaCreacion: LocalDateTime
+    - usuario: Usuario
+    - producto: Producto
+  }
+
+  class Review {
+    - id: Long
+    - puntuacion: Integer
+    - comentario: String
+    - fechaCreacion: LocalDateTime
+    - usuario: Usuario
+    - producto: Producto
+    - reserva: Reserva
+  }
+
+class PasswordResetToken {
+    - id: Long
+    - token: String
+    - expiryDate: LocalDateTime
+    - used: Boolean   
+  }
+}
+
+Producto "*" -- "1" Categoria
+Producto "1" -- "*" Imagen
+Producto "1" -- "*" Reserva
+Producto "1" -- "*" Review
+Producto "1" -- "*" Favorito
+Producto "1" -- "*" ProductoCaracteristica
+Caracteristica "1" -- "*" ProductoCaracteristica
+
+Usuario "1" -- "*" Reserva
+Usuario "1" -- "*" Favorito
+Usuario "1" -- "*" Review
+Usuario "*" -- "1" Rol
+Usuario "1" -- "0..1" PasswordResetToken
+Reserva "1" -- "0..1" Review
+RolPermiso "*" -- "1" Rol
+RolPermiso "*" -- "1" Permiso
+
+@enduml

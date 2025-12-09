@@ -45,8 +45,13 @@ export async function apiRequest(endpoint, options = {}) {
       throw new Error(message);
     }
 
-    // Devuelve el JSON si todo va bien
-    return await response.json();
+    // Devuelve JSON si es posible, si no, texto plano
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    } else {
+      return await response.text();
+    }
   } catch (error) {
     console.error("❌ Error en apiRequest:", error);
     throw error;

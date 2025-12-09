@@ -102,11 +102,11 @@ class AuthService {
   }
   
   // 🔒 Olvidé mi contraseña
-  async forgotPassword(email) {
+  async forgotPassword(email, origin = "CLIENT") {
     try {
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD, {
-        method: 'POST',
-        body: JSON.stringify({ email })
+        const response = await apiRequest(API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD, {
+          method: 'POST',
+          body: JSON.stringify({ email, origin })
       });
       
       return response;

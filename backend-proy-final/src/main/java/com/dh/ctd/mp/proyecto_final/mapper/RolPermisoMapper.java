@@ -15,6 +15,9 @@ public class RolPermisoMapper {
         dto.setId(entity.getId());
         dto.setRol(entity.getRol().getNombre()); // Usa el atributo relevante de Rol
         dto.setPermiso(entity.getPermiso().getNombre()); // Usa el atributo relevante de Permiso
+        dto.setRolId(entity.getRol().getId());
+        dto.setPermisoId(entity.getPermiso().getId());
+
         return dto;
     }
 

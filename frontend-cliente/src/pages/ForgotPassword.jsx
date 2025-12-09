@@ -14,8 +14,15 @@ const ForgotPassword = () => {
     setLoading(true);
     setSuccess('');
     setError('');
+    // Detectar si la app se accede desde una IP local (no localhost)
+    const hostname = window.location.hostname;
+    let origin = 'CLIENT';
+    // Si no es localhost ni 127.0.0.1, asumimos que es TEST (tablet/móvil)
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      origin = 'TEST';
+    }
     try {
-      const result = await authService.forgotPassword(email);
+      const result = await authService.forgotPassword(email, origin);
       if (result && result.successMessage) {
         setSuccess(result.successMessage);
         setError('');

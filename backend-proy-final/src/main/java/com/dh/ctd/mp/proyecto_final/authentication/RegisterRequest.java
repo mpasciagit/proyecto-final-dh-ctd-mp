@@ -18,4 +18,5 @@ public class RegisterRequest {
     private String apellido;
     private String email;
     private String password;
+    private OriginType origin;
 }

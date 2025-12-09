@@ -10,7 +10,9 @@ import java.util.Map;
 /**
  * Endpoint que define qué roles pueden acceder al panel administrativo.
  * Se consulta desde el frontend-admin antes del login.
+ * YA NO SE USA, SOLO SE MANTIENE POR SER PARTE DEL PROCESO DE APRENDIZAJE
  */
+@Deprecated
 @RestController
 @RequestMapping("/api/admin")
 public class AdminAccessController {

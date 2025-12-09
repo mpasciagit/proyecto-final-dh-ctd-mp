@@ -1,6 +1,6 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import '../../styles/FavoritoCrear.css';
 
 export default function FavoritoCrear({ onCreated } = {}) {
   const [usuarioId, setUsuarioId] = useState("");
@@ -9,11 +9,18 @@ export default function FavoritoCrear({ onCreated } = {}) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Limpiar mensaje de éxito solo al desmontar el componente
+  useEffect(() => {
+    return () => {
+      setSuccess("");
+    };
+  }, []);
+
   const resetForm = () => {
     setUsuarioId("");
     setProductoId("");
     setError("");
-    setSuccess("");
+    // No limpiar success aquí
   };
 
   const handleSubmit = async (e) => {
@@ -30,8 +37,8 @@ export default function FavoritoCrear({ onCreated } = {}) {
     try {
       const token = localStorage.getItem("token");
       const payload = {
-        usuario: { id: usuarioId.trim() },
-        producto: { id: productoId.trim() },
+        usuarioId: usuarioId.trim(),
+        productoId: productoId.trim(),
       };
 
       const resp = await axios.post(
@@ -45,7 +52,7 @@ export default function FavoritoCrear({ onCreated } = {}) {
         }
       );
 
-      setSuccess("Favorito creado con éxito.");
+      setSuccess("Favorito creado. Buscarlo en Favoritos > Listar.");
       if (onCreated && typeof onCreated === "function") {
         try {
           onCreated(resp.data);
@@ -64,51 +71,36 @@ export default function FavoritoCrear({ onCreated } = {}) {
           `Error ${err.response.status}: ${err.response.statusText}`;
         setError(msg);
       } else {
-        setError("Error de conexión. Revisá el backend.");
+        setError("No se pudo crear el favorito.");
       }
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 640,
-        margin: "1.5rem auto",
-        padding: "1.25rem",
-        background: "white",
-        border: "1px solid #e5e7eb",
-        borderRadius: 8,
-      }}
-    >
-      <h2 style={{ marginTop: 0 }}>Crear Favorito</h2>
-
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem" }}>
+    <div className="favorito-crear-container">
+      <h2>Crear Favorito</h2>
+      <form onSubmit={handleSubmit} className="favorito-crear-form">
         <label>
           ID Usuario
           <input
-            type="number"
+            type="text"
             value={usuarioId}
             onChange={(e) => setUsuarioId(e.target.value)}
             required
             placeholder="ID del usuario"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
           />
         </label>
-
         <label>
           ID Producto
           <input
-            type="number"
+            type="text"
             value={productoId}
             onChange={(e) => setProductoId(e.target.value)}
             required
             placeholder="ID del producto"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
           />
         </label>
-
         <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.5rem" }}>
           <button
             type="submit"
@@ -124,7 +116,6 @@ export default function FavoritoCrear({ onCreated } = {}) {
           >
             {loading ? "Creando..." : "Crear favorito"}
           </button>
-
           <button
             type="button"
             onClick={resetForm}
@@ -140,9 +131,8 @@ export default function FavoritoCrear({ onCreated } = {}) {
             Limpiar
           </button>
         </div>
-
-        {error && <p style={{ color: "crimson", margin: 0 }}>{error}</p>}
-        {success && <p style={{ color: "green", margin: 0 }}>{success}</p>}
+        {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
       </form>
     </div>
   );
