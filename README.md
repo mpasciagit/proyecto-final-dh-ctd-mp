@@ -198,7 +198,7 @@ Para una lista completa de endpoints y ejemplos de uso, ver la colección de Pos
 
 ## Diagrama de la Base de Datos
 El proyecto incluye un diagrama del modelo de datos realizado con PlantUML, disponible en el repositorio en formato .svg.
-Este diagrama puede visualizarse directamente desde VS Code (con la extensión de PlantUML) o desde el repositorio sin necesidad de herramientas adicionales (out/diagrama-entidades). 
+Este diagrama puede visualizarse directamente desde VS Code (con la extensión de PlantUML) o desde el repositorio sin necesidad de herramientas adicionales (proyecto-final/diagrama-entidades/). 
 ⚠️ Nota:
 El diagrama representa la estructura conceptual del sistema.
 Es una referencia arquitectónica para comprender la estructura general de la base de datos.
